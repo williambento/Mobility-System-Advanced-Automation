@@ -1,0 +1,12 @@
+João, 30, Masculino 
+Maria, 28, Feminino
+Pedro, 35, Masculino
+Ana, 42, Feminino
+Carlos, 50, Masculino
+Sofia, 26, Feminino
+André, 45, Masculino
+Paula, 32, Feminino
+Luís, 48, Masculino
+
+
+
