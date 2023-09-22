@@ -41,6 +41,7 @@ public class Sumo extends Thread{
 				carro.start();
 				Thread.sleep(100);
 			}
+
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		} catch (InterruptedException e) {
@@ -53,7 +54,7 @@ public class Sumo extends Thread{
 
 	public Cars gerarCarros(){
 		try {
-			// fuelType: 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
+			//fuelType: 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
 			int fuelType = 2;
 			int fuelPreferential = 2;
 			double fuelPrice = 3.40;
