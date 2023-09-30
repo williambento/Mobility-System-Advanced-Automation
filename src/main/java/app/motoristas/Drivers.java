@@ -68,5 +68,14 @@ public class Drivers {
         }
     }
 
+    @Override
+	public String toString() {
+    	return "Driver: " + idDriver + " | " + "Carro: " + getCars();
+	}
+
+    public String getIDDriver(){
+        return idDriver;
+    }
+
 }
 

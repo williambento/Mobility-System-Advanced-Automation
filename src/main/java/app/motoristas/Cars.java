@@ -273,4 +273,9 @@ public class Cars extends Thread {
 	public double getCombustivel(){
 		return qtCombustivel;
 	}
+
+	@Override
+	public String toString() {
+    	return "Carro: " + idAuto;
+	}
 }

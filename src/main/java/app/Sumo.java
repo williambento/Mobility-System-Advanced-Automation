@@ -5,7 +5,6 @@ import java.io.IOException;
 import app.motoristas.Cars;
 import app.transporte.Company;
 import app.transporte.TransportService;
-import de.tudresden.sumo.objects.SumoColor;
 import it.polito.appeal.traci.SumoTraciConnection;
 
 public class Sumo extends Thread{
@@ -13,6 +12,7 @@ public class Sumo extends Thread{
     private SumoTraciConnection sumo;
 	private Company company;
 	private Cars carro;
+	private boolean verificador;
 
     public Sumo(Company _company){
 		this.company = _company;
@@ -33,15 +33,18 @@ public class Sumo extends Thread{
 			sumo.runServer(12345);
 		
 			if (company.isOn()) {
-				this.carro = gerarCarros();
+				for (int i = 0; i < 200; i++){
+					String idTransport = "Rota: " + (i + 1);
+					for (Cars carro : company.getCars()) {
+						TransportService tS1 = new TransportService(true, idTransport, company, carro, sumo);
+						tS1.start();
+						Thread.sleep(5000);
+						carro.start();
+						Thread.sleep(100);
+					}
+				}
 				//Cars a1 = new Cars(true, "CAR1", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
-				TransportService tS1 = new TransportService(true, "CAR1", company, carro, sumo);
-				tS1.start();
-				Thread.sleep(5000);
-				carro.start();
-				Thread.sleep(100);
 			}
-
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		} catch (InterruptedException e) {
@@ -49,10 +52,10 @@ public class Sumo extends Thread{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		company.moveRouteExecuted(company.getIDItinerary());  
+		//company.moveRouteExecuted(company.getIDItinerary());  
 	}
 
-	public Cars gerarCarros(){
+	/*public Cars gerarCarros(){
 		try {
 			//fuelType: 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
 			int fuelType = 2;
@@ -69,7 +72,7 @@ public class Sumo extends Thread{
 			e.printStackTrace();
 			return null;
 		}
-	}
+	}*/
 
 	public double getPagamento(){
 		return company.calculaPagamento(this.carro);
