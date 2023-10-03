@@ -46,6 +46,7 @@ public class Company extends Thread {
         this.banco = _banco;
         this.contaCompany = new ContaCorrente(_login, _senha, 200000);
         banco.addConta(_login, _senha, contaCompany);
+        this.cadastraCarros();
     }
 
     public void run(){

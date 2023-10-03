@@ -7,7 +7,7 @@ import app.transporte.Company;
 import app.transporte.TransportService;
 import it.polito.appeal.traci.SumoTraciConnection;
 
-public class Sumo extends Thread{
+public class Sumo extends Thread {
 
     private SumoTraciConnection sumo;
 	private Company company;
@@ -30,19 +30,16 @@ public class Sumo extends Thread{
 		sumo.addOption("quit-on-end", "1"); // auto-close on end
 
 		try {
-			sumo.runServer(12345);
+			sumo.runServer(8000);
 		
 			if (company.isOn()) {
-				for (int i = 0; i < 200; i++){
-					String idTransport = "Rota: " + (i + 1);
-					for (Cars carro : company.getCars()) {
-						TransportService tS1 = new TransportService(true, idTransport, company, carro, sumo);
-						tS1.start();
-						Thread.sleep(5000);
-						carro.start();
-						Thread.sleep(100);
-					}
-				}
+				String idTransport = "Lavras";
+				Cars carro = company.buscarCarroPorId("CAR10");
+				TransportService tS1 = new TransportService(true, idTransport, company, carro, sumo);
+				tS1.start();
+				Thread.sleep(5000);
+				carro.start();
+				Thread.sleep(100);
 				//Cars a1 = new Cars(true, "CAR1", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
 			}
 		} catch (IOException e1) {
