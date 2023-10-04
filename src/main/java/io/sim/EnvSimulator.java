@@ -1,4 +1,4 @@
-/*package io.sim;
+package io.sim;
 
 import java.io.IOException;
 
@@ -17,7 +17,7 @@ public class EnvSimulator extends Thread{
     public void run(){
 
 		/* SUMO */
-		/*String sumo_bin = "sumo-gui";		
+		String sumo_bin = "sumo-gui";		
 		String config_file = "map/map.sumo.cfg";
 		
 		// Sumo connection
@@ -40,8 +40,8 @@ public class EnvSimulator extends Thread{
 				int personNumber = 1;
 				SumoColor green = new SumoColor(0, 255, 0, 126);
 				Auto a1 = new Auto(true, "CAR1", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
-				TransportService tS1 = new TransportService(true, "CAR1", i1, a1, sumo);
-				tS1.start();
+				//TransportService tS1 = new TransportService(true, "CAR1", i1, a1, sumo);
+				//tS1.start();
                 Thread.sleep(5000);
 				a1.start();
 			}
@@ -57,4 +57,4 @@ public class EnvSimulator extends Thread{
 
     }
 
-}*/
+}

@@ -63,7 +63,7 @@ public class Company extends Thread {
     }
     
 
-    //adiciona todas as rotas do arquivo xml ao array routesToExecuted
+    //adiciona todas as rotas do arquivo xml ao array routesToExecuted (Rotas a serem executadas)
     public void addRoutes(){
         this.xml = "data/dados.xml";
         try {

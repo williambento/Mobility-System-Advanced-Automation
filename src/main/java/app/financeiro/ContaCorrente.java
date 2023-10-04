@@ -2,7 +2,7 @@ package app.financeiro;
 
 import java.util.ArrayList;
 
-public class ContaCorrente {
+public class ContaCorrente extends Thread{
     private double saldo;
     private String login;
     private String senha;

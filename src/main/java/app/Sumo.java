@@ -12,7 +12,6 @@ public class Sumo extends Thread {
     private SumoTraciConnection sumo;
 	private Company company;
 	private Cars carro;
-	private boolean verificador;
 
     public Sumo(Company _company){
 		this.company = _company;
@@ -31,7 +30,6 @@ public class Sumo extends Thread {
 
 		try {
 			sumo.runServer(8000);
-		
 			if (company.isOn()) {
 				String idTransport = "Lavras";
 				Cars carro = company.buscarCarroPorId("CAR10");
@@ -39,7 +37,6 @@ public class Sumo extends Thread {
 				tS1.start();
 				Thread.sleep(5000);
 				carro.start();
-				Thread.sleep(100);
 				//Cars a1 = new Cars(true, "CAR1", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
 			}
 		} catch (IOException e1) {

@@ -5,9 +5,9 @@ import app.financeiro.ContaCorrente;
 import app.motoristas.Drivers;
 
 public class FuelStation extends Thread {
-    private String nome;
-    private ContaCorrente contaFuelStation;
-    private AlphaBank banco;
+    private String nome; 
+    private ContaCorrente contaFuelStation; // Meio de transações
+    private AlphaBank banco; // Banco servidor
 
 
     public FuelStation(AlphaBank _banco, String _login, String _senha){

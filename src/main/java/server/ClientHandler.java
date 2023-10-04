@@ -77,7 +77,7 @@ public class ClientHandler implements Runnable {
     public Sumo simulacaoSUMO(){
         AlphaBank Nubank = new AlphaBank();
         Company SevenGO = new Company(Nubank, "SevenGO", "mobilidade");
-        SevenGO.start();
+        /*SevenGO.start();*/
         try {
             SevenGO.join(); // Espera que a thread SevenGO termine.
         } catch (InterruptedException e) {

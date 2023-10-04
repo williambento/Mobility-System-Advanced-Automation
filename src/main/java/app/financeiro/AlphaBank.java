@@ -3,8 +3,8 @@ package app.financeiro;
 import java.util.Map;
 import java.util.HashMap;
 
-public class AlphaBank{
-    private Map<String, ContaCorrente> contas;
+public class AlphaBank extends Thread{
+    private Map<String, ContaCorrente> contas; // Armazena 
 
     public AlphaBank(){
         contas = new HashMap<>();

@@ -13,6 +13,7 @@ public class App {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+       
         Sumo Sumo = new Sumo(SevenGO);
         Sumo.start();
         //System.out.println(Sumo.getPagamento());
