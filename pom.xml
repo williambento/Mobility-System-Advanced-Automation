@@ -119,6 +119,11 @@
       <version>20230227</version> <!-- Versão pode variar -->
     </dependency>
 
+    <dependency>
+        <groupId>bcprov-jdk15on</groupId>
+        <artifactId>bcprov-jdk15on</artifactId>
+        <version>1.70</version>
+    </dependency>
 
   </dependencies>
 

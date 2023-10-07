@@ -229,11 +229,11 @@ public class Company extends Thread {
 
     public void cadastraCarros(){
         /* SUMO */
-		String sumo_bin = "sumo-gui";		
+		/*String sumo_bin = "sumo-gui";		
 		String config_file = "map/map.sumo.cfg";
 		
 		// Sumo connection
-		this.sumo = new SumoTraciConnection(sumo_bin, config_file);
+		this.sumo = new SumoTraciConnection(sumo_bin, config_file);*/
         try {
             //fuelType: 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
             for (int i = 0; i < 200; i++){

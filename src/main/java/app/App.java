@@ -2,8 +2,10 @@ package app;
 
 import app.financeiro.AlphaBank;
 import app.transporte.Company;
+import it.polito.appeal.traci.SumoTraciConnection;
 
 public class App {
+
     public static void main(String[] args) {
         AlphaBank Nubank = new AlphaBank();
         Company SevenGO = new Company(Nubank, "SevenGO", "mobilidade");

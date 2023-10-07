@@ -9,8 +9,9 @@ import it.polito.appeal.traci.SumoTraciConnection;
 
 public class Sumo extends Thread {
 
-    private SumoTraciConnection sumo;
+    /*private SumoTraciConnection sumo;*/
 	private Company company;
+	private SumoTraciConnection sumo;
 	private Cars carro;
 
     public Sumo(Company _company){
@@ -28,25 +29,28 @@ public class Sumo extends Thread {
 		sumo.addOption("start", "1"); // auto-run on GUI show
 		sumo.addOption("quit-on-end", "1"); // auto-close on end
 
-		try {
-			sumo.runServer(8000);
-			if (company.isOn()) {
-				String idTransport = "Lavras";
-				Cars carro = company.buscarCarroPorId("CAR10");
-				TransportService tS1 = new TransportService(true, idTransport, company, carro, sumo);
-				tS1.start();
-				Thread.sleep(5000);
-				carro.start();
-				//Cars a1 = new Cars(true, "CAR1", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+		for (Cars carro : company.getCars()) {
+			try {
+				sumo.runServer(8000);
+				if (company.isOn()) {
+					String idTransport = "Lavras";
+					//Cars carro = company.buscarCarroPorId("CAR10");
+					company.buscarCarroPorId(carro.getIdAuto());
+					TransportService tS1 = new TransportService(true, idTransport, company, carro, sumo);
+					tS1.start();
+					Thread.sleep(5000);
+					carro.start();
+					//Cars a1 = new Cars(true, "CAR1", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+				}
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 		//company.moveRouteExecuted(company.getIDItinerary());  
+		}
 	}
 
 	/*public Cars gerarCarros(){
