@@ -6,7 +6,6 @@ import java.security.NoSuchAlgorithmException;
 
 public class CryptoConfig {
     private static SecretKey secretKey;
-    private static SecretKey key;
 
     public static SecretKey getSecretKey() throws NoSuchAlgorithmException {
         if (secretKey == null) {
@@ -16,13 +15,5 @@ public class CryptoConfig {
             secretKey = keyGen.generateKey();
         }
         return secretKey;
-    }
-    
-    public static void setSecretKey(SecretKey _key) {
-        key = _key;
-    }
-
-    public static SecretKey getKey(){
-        return key;
     }
 }

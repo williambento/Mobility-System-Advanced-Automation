@@ -1,24 +1,17 @@
 package simulation;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.NoSuchAlgorithmException;
-import javax.crypto.SecretKey;
 
 public class CompanyServer {
     public static void main(String[] args) {
-        int port = 8000; // Porta na qual o servidor irá escutar
+        int port = 12345; // Porta na qual o servidor irá escutar
 
         try {
-            // Gere a chave secreta uma vez no servidor
-            // Obtém a chave secreta usando CryptoConfig
-            SecretKey secretKey = CryptoConfig.getSecretKey();
-            
-            // Passe a chave secreta para o cliente
-            CryptoConfig.setSecretKey(secretKey);
-
-            // Cria um servidor Socket (serverSocket)
+            // Cria um servidor Socket
             ServerSocket serverSocket = new ServerSocket(port);
             System.out.println("Servidor está ouvindo na porta " + port);
 
@@ -28,14 +21,51 @@ public class CompanyServer {
                 System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
 
                 // Cria threads para manipular múltiplos clientes simultaneamente
-                // Passa o clientSocket e a chave secreta para a classe ClientHandler
-                ClientHandler clientHandler = new ClientHandler(clientSocket, secretKey);
-
-                // Roda a Thread
+                ClientHandler clientHandler = new ClientHandler(clientSocket);
                 Thread thread = new Thread(clientHandler);
                 thread.start();
             }
-        } catch (IOException | NoSuchAlgorithmException e) {
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+class ClientHandler implements Runnable {
+    private Socket clientSocket;
+
+    public ClientHandler(Socket clientSocket) {
+        this.clientSocket = clientSocket;
+    }
+
+    @Override
+    public void run() {
+        try {
+            // Fluxos de entrada e saída para comunicação com o cliente
+            InputStream inputStream = clientSocket.getInputStream();
+            OutputStream outputStream = clientSocket.getOutputStream();
+
+            // Lê e escreve mensagens com o cliente
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                String messageReceived = new String(buffer, 0, bytesRead);
+                System.out.println("Mensagem do cliente: " + messageReceived);
+
+                // Processa a mensagem ou responde ao cliente aqui
+
+                // Verifica se a conexão ainda está ativa
+                if (!clientSocket.isClosed()) {
+                    // Exemplo de resposta ao cliente
+                    String responseMessage = "Mensagem recebida com sucesso!";
+                    outputStream.write(responseMessage.getBytes());
+                    outputStream.flush();
+                }
+            }
+
+            // Fecha a conexão com o cliente
+            clientSocket.close();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

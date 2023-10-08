@@ -39,6 +39,10 @@ public class ClientHandler implements Runnable {
                 System.out.println("Mensagem do cliente (descriptografada): " + messageReceived);
 
                 // Processa a mensagem ou responde ao cliente aqui
+                // Envie a chave secreta para o cliente
+                byte[] secretKeyBytes = secretKey.getEncoded();
+                outputStream.write(secretKeyBytes);
+                outputStream.flush();
 
                 // Exemplo de resposta ao cliente
                 String responseMessage = "Mensagem recebida com sucesso!";

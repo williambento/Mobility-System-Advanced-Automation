@@ -1,21 +1,30 @@
 package simulation;
-
+// Driver.java
 import java.io.*;
 import java.net.*;
 import java.security.NoSuchAlgorithmException;
-import java.security.Security;
+import java.security.SecureRandom;
+
+import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import javax.crypto.spec.IvParameterSpec;
+
+import org.json.JSONObject;
 
 public class Driver {
+
+    private static SecretKey secretKey;
+    
     public static void main(String[] args) throws NoSuchAlgorithmException {
-        Security.addProvider(new BouncyCastleProvider());
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+        keyGen.init(128); // Tamanho da chave AES
+        secretKey = keyGen.generateKey();
+        
         String serverAddress = "localhost"; // Endereço do servidor (pode ser um IP ou "localhost")
-        int serverPort = 8000; // Porta do servidor
+        int serverPort = 12345; // Porta do servidor
 
         try {
             // Cria uma conexão com o servidor
-            SecretKey secretKey = CryptoConfig.getKey();
             Socket socket = new Socket(serverAddress, serverPort);
             System.out.println("Conexão estabelecida com o servidor.");
 
@@ -24,12 +33,14 @@ public class Driver {
             InputStream inputStream = socket.getInputStream();
 
             // Solicita uma rota ao servidor e obtém a resposta
-            String destination = "ExampleDestination"; // Substitua pelo destino desejado
-            String routeRequest = ComunicationJson.createRouteRequest(destination);
+            String routeRequest = requestRoute();
             byte[] requestBytes = routeRequest.getBytes();
 
-            // Envia a solicitação criptografada ao servidor
-            byte[] encryptedRequest = Encryption.encrypt(requestBytes, secretKey);
+            byte[] ivBytes = generateRandomIV(16); 
+            IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
+
+            // Aqui você deve criptografar a solicitação antes de enviá-la
+            byte[] encryptedRequest = CryptoUtils.encrypt(requestBytes, secretKey, ivSpec);
             outputStream.write(encryptedRequest);
             outputStream.flush();
             System.out.println("Solicitação de rota enviada ao servidor: " + routeRequest);
@@ -37,9 +48,11 @@ public class Driver {
             // Recebe a resposta do servidor
             byte[] buffer = new byte[1024];
             int bytesRead = inputStream.read(buffer);
-            byte[] encryptedResponse = new byte[bytesRead];
-            System.arraycopy(buffer, 0, encryptedResponse, 0, bytesRead);
-            String serverResponse = Encryption.decrypt(encryptedResponse, secretKey);
+
+            // Aqui você deve descriptografar a resposta do servidor
+            byte[] decryptedResponse = CryptoUtils.decrypt(buffer, bytesRead, secretKey, ivSpec);
+            
+            String serverResponse = new String(decryptedResponse, 0, decryptedResponse.length);
             System.out.println("Resposta do servidor: " + serverResponse);
 
             // Fecha a conexão com o servidor
@@ -49,5 +62,21 @@ public class Driver {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    // Método para criar uma solicitação de rota em formato JSON
+    private static String requestRoute() {
+        JSONObject jsonRequest = new JSONObject();
+        jsonRequest.put("requestType", "route");
+        jsonRequest.put("destination", "ExampleDestination");
+        return jsonRequest.toString();
+    }
+
+    // Método para gerar um IV aleatório
+    public static byte[] generateRandomIV(int ivSize) {
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] iv = new byte[ivSize];
+        secureRandom.nextBytes(iv);
+        return iv;
     }
 }
