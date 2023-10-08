@@ -12,7 +12,11 @@ public class CompanyServer {
 
         try {
             // Gere a chave secreta uma vez no servidor
+            // Obtém a chave secreta usando CryptoConfig
             SecretKey secretKey = CryptoConfig.getSecretKey();
+            
+            // Passe a chave secreta para o cliente
+            CryptoConfig.setSecretKey(secretKey);
 
             // Cria um servidor Socket (serverSocket)
             ServerSocket serverSocket = new ServerSocket(port);

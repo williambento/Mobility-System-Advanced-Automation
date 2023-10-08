@@ -22,7 +22,6 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         Security.addProvider(new BouncyCastleProvider());
-
         try {
             // Fluxos de entrada e saída para comunicação com o cliente
             InputStream inputStream = clientSocket.getInputStream();

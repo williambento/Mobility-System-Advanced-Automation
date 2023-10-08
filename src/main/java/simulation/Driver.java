@@ -2,20 +2,20 @@ package simulation;
 
 import java.io.*;
 import java.net.*;
+import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import javax.crypto.SecretKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class Driver {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws NoSuchAlgorithmException {
         Security.addProvider(new BouncyCastleProvider());
-
         String serverAddress = "localhost"; // Endereço do servidor (pode ser um IP ou "localhost")
         int serverPort = 8000; // Porta do servidor
 
         try {
             // Cria uma conexão com o servidor
-            SecretKey secretKey = CryptoConfig.getSecretKey();
+            SecretKey secretKey = CryptoConfig.getKey();
             Socket socket = new Socket(serverAddress, serverPort);
             System.out.println("Conexão estabelecida com o servidor.");
 
