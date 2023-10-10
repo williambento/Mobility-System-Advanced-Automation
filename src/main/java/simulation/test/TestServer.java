@@ -7,12 +7,13 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import simulation.test.sumo.Sumo;
 import simulation.test.sumo.Route;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.Security;
@@ -23,7 +24,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-public class TestServer extends Thread{
+public class TestServer extends Thread implements Serializable{
 
     private ArrayList<Route> routes;
     private String[] rotaExecutavel;
@@ -31,6 +32,7 @@ public class TestServer extends Thread{
     private boolean on; // verifica se a rota está on
 
     public TestServer(){
+
     }
 
     public void run(){
@@ -44,7 +46,7 @@ public class TestServer extends Thread{
         TestServer sevenGO = new TestServer();
         sevenGO.start();
         Security.addProvider(new BouncyCastleProvider());
-        ServerSocket serverSocket = new ServerSocket(12345);
+        ServerSocket serverSocket = new ServerSocket(3000);
         System.out.println("Aguardando conexão do cliente...");
 
         // Chave e IV usados para criptografia e descriptografia
@@ -74,7 +76,7 @@ public class TestServer extends Thread{
             String decryptedMessage = new String(decryptedMessageBytes);
 
             // Imprima a mensagem descriptografada
-            System.out.println("Mensagem Recebida do Cliente: " + decryptedMessage);
+            //System.out.println("Mensagem Recebida do Cliente: " + decryptedMessage);
 
             // Analisa a mensagem JSON usando a classe JsonSchema
             sevenGO.idRota = JsonSchema.analisarMensagem(decryptedMessage, "idRota");
@@ -82,16 +84,42 @@ public class TestServer extends Thread{
 
             // Simule a criação da mensagem com as edges da rota (exemplo)
     
-            String edges = buscaRotaID(sevenGO.idRota, sevenGO.getRotas());
-            System.out.println("Edges: " + edges);
+            String edges = buscaRotaID(sevenGO.idRota, sevenGO.getRotas(), sevenGO);
+            //System.out.println("Edges: " + edges);
 
             // Crie uma mensagem JSON da rota usando a classe JsonSchema
             String mensagemRota = JsonSchema.criarRotaJson(sevenGO.idRota, edges);
             // Criptografe a mensagem da rota usando a classe Crypto
             byte[] encryptedResponse = Crypto.encrypt(mensagemRota.getBytes(), chave, iv);
+            // Envie o objeto TestServer serializado para o cliente
             // Envie a resposta criptografada ao cliente
             output.write(encryptedResponse);
             output.flush();
+
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+            objectOutputStream.writeObject(sevenGO);
+            objectOutputStream.flush();
+            
+            //TestSumo t1 = new TestSumo(sevenGO);
+            /* 
+            String[] rota = sevenGO.getItinerary();
+
+            // Imprima o ID do itinerário
+            System.out.println("ID do Itinerário: " + sevenGO.getIDItinerary());
+            
+            // Imprima as edges do itinerário
+            System.out.println("Edges do Itinerário:");
+            for (String edge : rota) {
+                System.out.println(edge);
+            }            
+            */
+            // Aguarde até que a primeira thread termine
+            /*try {
+                sevenGO.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+}
+            t1.start();*/
             // Fecha a conexão com o cliente
             clientSocket.close();
         }
@@ -131,9 +159,20 @@ public class TestServer extends Thread{
     }
 
     // Método para obter as edges de uma determinada idRota
-    public static String buscaRotaID(String id, ArrayList<Route> routes) {
+    public static String buscaRotaID(String id, ArrayList<Route> routes, TestServer company) {
         for (Route route : routes) {
             if (route.getRouteID().equals(id)) {
+                String edgesString  = route.getEdges();
+                // Divida a string em um array de arestas usando um caractere de separação (por exemplo, espaço em branco)
+                String[] edgesArray = edgesString.split(" "); // Altere o separador se necessário
+
+                String[] rotaExecutavel = new String[edgesArray.length + 1];
+                rotaExecutavel[0] = route.getRouteID(); // O primeiro elemento é o ID da rota
+                rotaExecutavel[1] = route.getEdges();
+                // Copie as arestas para o array a partir da posição 1
+                //System.arraycopy(edgesArray, 0, rotaExecutavel, 1, edgesArray.length);
+
+                company.setItinerary(rotaExecutavel);
                 return route.getEdges();            
             }
         }
@@ -144,6 +183,9 @@ public class TestServer extends Thread{
         return routes;
     }
 
+    public void setItinerary(String[] rota){
+        rotaExecutavel = rota;
+    }
     
     public String[] getItinerary(){
         return this.rotaExecutavel;
@@ -157,4 +199,5 @@ public class TestServer extends Thread{
     public boolean isOn() {
             return this.on;
     }
+
 }

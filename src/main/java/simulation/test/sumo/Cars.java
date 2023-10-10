@@ -73,7 +73,7 @@ public class Cars extends Thread {
 		}
 	}
 
-	private void atualizaSensores() {
+	public void atualizaSensores() {
 		try {
 			SumoTraciConnection sumo = this.getSumo();
 			if (sumo != null && !sumo.isClosed()) {
