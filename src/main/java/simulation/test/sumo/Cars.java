@@ -67,8 +67,8 @@ public class Cars extends Thread {
 		
 		while (this.on_off) {
 			try {
-				Cars.sleep(this.acquisitionRate);
-				this.atualizaSensores();
+				/*Cars.sleep(this.acquisitionRate);
+				this.atualizaSensores();*/
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -183,9 +183,6 @@ public class Cars extends Thread {
 
 				// Chame o método para criar os dados JSON e salve no campo
                 this.dadosJson = JsonSchema.carDadosJson(this.idAuto, this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission(), this.totalDistance);
-				System.out.println(dadosJson);
-				setJsonDados(dadosJson);
-				System.out.println(getJsonDados());
 				//System.out.println(dadosJson);
 			} else {
 				//System.out.println("SUMO is closed...");

@@ -6,7 +6,7 @@ import de.tudresden.sumo.objects.SumoColor;
 import it.polito.appeal.traci.SumoTraciConnection;
 import simulation.test.banco.AlphaBankServer;
 import simulation.test.sumo.Cars;
-
+import simulation.test.sumo.TransportService;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -30,12 +30,56 @@ public class TestClient extends Thread implements Serializable{
     private TestServer company;
     private SumoTraciConnection sumo;
     private static Cars carro;
+    private String dadosJson;
 
     public TestClient(String _idDriver, String _senha){
         this.idDriver = _idDriver;
         this.senhaDriver = _senha;
         this.cars = new ArrayList<>(); // Inicialize a lista cars aqui
         cadastraCarros();
+    }
+
+    public void run() {
+        /* SUMO */
+        String sumo_bin = "sumo-gui";		
+        String config_file = "map/map.sumo.cfg";
+
+        // Sumo connection
+        this.sumo = new SumoTraciConnection(sumo_bin, config_file);
+        sumo.addOption("start", "1"); // auto-run on GUI show
+        sumo.addOption("quit-on-end", "1"); // auto-close on end
+
+        try {
+			sumo.runServer(8000);
+            String jsonAnterior = null;
+			if (company.isOn()) {
+				String idTransport = "Lavras";
+                carro = criaCarro();
+                carro.start();
+				TransportService tS1 = new TransportService(true, idTransport, company, carro, sumo);
+				tS1.start();
+				Thread.sleep(5000);
+                while (company.isOn()) {
+                    carro.atualizaSensores();
+                    dadosJson = carro.getJsonDados(); // Obtém os dados JSON
+                    System.out.println("Dados JSON: " + dadosJson); // Faça o que quiser com os dados JSON
+                    // Comparar o JSON atual com o JSON anterior
+                    if (dadosJson.equals(jsonAnterior)) {
+                        // Se forem iguais, saia do loop
+                        break;
+                    }
+                    // Atualize o JSON anterior com o JSON atual
+                    jsonAnterior = dadosJson;
+                    Thread.sleep(1000);
+                }
+			} else {
+                System.out.println("Fim da Simulação");
+            }
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
     }
 
     public static void main(String[] args) throws Exception {
@@ -106,12 +150,15 @@ public class TestClient extends Thread implements Serializable{
             ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
             TestServer receivedTestServer = (TestServer) objectInputStream.readObject();
             System.out.println("Rota recebida e pronto para iniciar!");
-
-            carro = william.criaCarro();
        
-            TestSumo s1 = new TestSumo(receivedTestServer, carro);
-            s1.start();
-            
+            carro = william.criaCarro();
+            Thread.sleep(100);
+            william.setCompany(receivedTestServer);
+            // Inicie o loop para receber os dados JSON
+            william.start();
+            /*TestSumo s1 = new TestSumo(william, receivedTestServer, carro);
+            s1.start();*/
+
             //Feche a conexão com o servidor
             socket.close();
         } catch (Exception e) {
@@ -135,6 +182,14 @@ public class TestClient extends Thread implements Serializable{
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public String getDadosJson() {
+        return dadosJson;
+    }
+
+    public void setCompany(TestServer company){
+        this.company = company;
     }
 
     public static String geraSolicitacaoRota(){
