@@ -1,11 +1,11 @@
 package simulation.test;
 
 public class BotPayment extends Thread {
-    private TestClient driver;
+    private DriverClient driver;
     private double paymentPerKilometer;
     private boolean running;
 
-    public BotPayment(TestClient driver) {
+    public BotPayment(DriverClient driver) {
         this.driver = driver;
         this.paymentPerKilometer = 3.25; // Valor do pagamento por quilômetro
         this.running = true;

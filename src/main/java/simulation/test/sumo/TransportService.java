@@ -4,7 +4,7 @@ import de.tudresden.sumo.cmd.Route;
 import de.tudresden.sumo.cmd.Vehicle;
 import de.tudresden.sumo.objects.SumoStringList;
 import it.polito.appeal.traci.SumoTraciConnection;
-import simulation.test.TestServer;
+import simulation.test.CompanyServer;
 
 public class TransportService extends Thread {
 
@@ -12,10 +12,10 @@ public class TransportService extends Thread {
 	private boolean on_off;
 	private SumoTraciConnection sumo;
 	private Cars auto;
-	private TestServer itinerary;
+	private CompanyServer itinerary;
 	
 
-	public TransportService(boolean _on_off, String _idTransportService, TestServer company, Cars _auto,
+	public TransportService(boolean _on_off, String _idTransportService, CompanyServer company, Cars _auto,
 			SumoTraciConnection routeEdges) {
 
 		this.on_off = _on_off;
@@ -109,7 +109,7 @@ public class TransportService extends Thread {
 		return this.auto;
 	}
 
-	public TestServer getItinerary() {
+	public CompanyServer getItinerary() {
 		return this.itinerary;
 	}
 }

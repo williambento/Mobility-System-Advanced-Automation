@@ -29,7 +29,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-public class TestServer extends Thread implements Serializable{
+public class CompanyServer extends Thread implements Serializable{
 
     private ArrayList<Route> routes;
     private ArrayList<Route> routesInExecution;
@@ -37,17 +37,17 @@ public class TestServer extends Thread implements Serializable{
     private String[] rotaExecutavel;
     private String idRota;
     private boolean on; // verifica se a rota está on
-    private ArrayList<TestClient> drivers;
+    private ArrayList<DriverClient> drivers;
     private ArrayList<Cars> cars;
     private AlphaBankServer banco;
     private ContaCorrente contaCompany;
 
-    public TestServer(AlphaBankServer _banco, String _login, String _senha){
+    public CompanyServer(AlphaBankServer _banco, String _login, String _senha){
         this.routes = new ArrayList<Route>();
         this.routesInExecution = new ArrayList<Route>();
         this.executedRoutes = new ArrayList<Route>();
         this.cars = new ArrayList<Cars>();
-        this.drivers = new ArrayList<TestClient>();
+        this.drivers = new ArrayList<DriverClient>();
         this.banco = _banco;
         this.contaCompany = new ContaCorrente(_login, _senha, 200000);
         //banco.addConta(_login, _senha, contaCompany);
@@ -76,7 +76,7 @@ public class TestServer extends Thread implements Serializable{
             String login = "Company";
             String senha = "123456";
 
-            TestServer sevenGO = new TestServer(banco, login, senha);
+            CompanyServer sevenGO = new CompanyServer(banco, login, senha);
             sevenGO.start();
             Security.addProvider(new BouncyCastleProvider());
             System.out.println("Servidor Company iniciado. Aguardando conexões...");
@@ -192,7 +192,7 @@ public class TestServer extends Thread implements Serializable{
     }
 
     // Método para obter as edges de uma determinada idRota
-    public static String buscaRotaID(String id, ArrayList<Route> routes, TestServer company) {
+    public static String buscaRotaID(String id, ArrayList<Route> routes, CompanyServer company) {
         for (Route route : routes) {
             if (route.getRouteID().equals(id)) {
                 String edgesString  = route.getEdges();

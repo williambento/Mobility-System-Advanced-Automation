@@ -20,19 +20,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
-public class TestClient extends Thread implements Serializable{
+public class DriverClient extends Thread implements Serializable{
     
     private String idDriver;
     private String senhaDriver;
     private AlphaBankServer banco;
     private ArrayList<Cars> cars;
-    private ArrayList<TestClient> drivers;
-    private TestServer company;
+    private ArrayList<DriverClient> drivers;
+    private CompanyServer company;
     private SumoTraciConnection sumo;
     private static Cars carro;
     private String dadosJson;
 
-    public TestClient(String _idDriver, String _senha){
+    public DriverClient(String _idDriver, String _senha){
         this.idDriver = _idDriver;
         this.senhaDriver = _senha;
         this.cars = new ArrayList<>(); // Inicialize a lista cars aqui
@@ -101,7 +101,7 @@ public class TestClient extends Thread implements Serializable{
     public static void connectToCompany(String host, int port) {
         try {  
     
-            TestClient william = new TestClient("William", "22");
+            DriverClient william = new DriverClient("William", "22");
             Security.addProvider(new BouncyCastleProvider());
 
             Socket socket = new Socket(host, port);
@@ -148,7 +148,7 @@ public class TestClient extends Thread implements Serializable{
             // Imprima a resposta
             //System.out.println("Resposta do servidor: " + resposta);
             ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
-            TestServer receivedTestServer = (TestServer) objectInputStream.readObject();
+            CompanyServer receivedTestServer = (CompanyServer) objectInputStream.readObject();
             System.out.println("Rota recebida e pronto para iniciar!");
        
             carro = william.criaCarro();
@@ -188,7 +188,7 @@ public class TestClient extends Thread implements Serializable{
         return dadosJson;
     }
 
-    public void setCompany(TestServer company){
+    public void setCompany(CompanyServer company){
         this.company = company;
     }
 
@@ -270,16 +270,16 @@ public class TestClient extends Thread implements Serializable{
             String idDriver = "Driver" + (i + 1);
             String senha = "aux" + (i + 1);
             String idCar = "CAR" + (i + 1);
-            TestClient driver = new TestClient(idDriver, senha);
+            DriverClient driver = new DriverClient(idDriver, senha);
             setDriver(driver);
         }
     }
 
-    public void setDriver(TestClient _driver){
+    public void setDriver(DriverClient _driver){
         drivers.add(_driver);
     }
 
-    public ArrayList<TestClient> getDrivers(){
+    public ArrayList<DriverClient> getDrivers(){
         return drivers;
     }
 
