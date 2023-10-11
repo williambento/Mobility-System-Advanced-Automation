@@ -1,8 +1,9 @@
 package simulation.test.banco;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class ContaCorrente extends Thread{
+public class ContaCorrente extends Thread implements Serializable{
     private double saldo;
     private String login;
     private String senha;

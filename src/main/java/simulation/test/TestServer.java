@@ -7,6 +7,11 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import simulation.test.banco.ContaCorrente;
+import de.tudresden.sumo.objects.SumoColor;
+import it.polito.appeal.traci.SumoTraciConnection;
+import simulation.test.banco.AlphaBankServer;
+import simulation.test.sumo.Cars;
 import simulation.test.sumo.Route;
 
 import java.io.DataInputStream;
@@ -27,12 +32,25 @@ import javax.xml.parsers.ParserConfigurationException;
 public class TestServer extends Thread implements Serializable{
 
     private ArrayList<Route> routes;
+    private ArrayList<Route> routesInExecution;
+    private ArrayList<Route> executedRoutes;
     private String[] rotaExecutavel;
     private String idRota;
     private boolean on; // verifica se a rota está on
+    private ArrayList<TestClient> drivers;
+    private ArrayList<Cars> cars;
+    private AlphaBankServer banco;
+    private ContaCorrente contaCompany;
 
-    public TestServer(){
-
+    public TestServer(AlphaBankServer _banco, String _login, String _senha){
+        this.routes = new ArrayList<Route>();
+        this.routesInExecution = new ArrayList<Route>();
+        this.executedRoutes = new ArrayList<Route>();
+        this.cars = new ArrayList<Cars>();
+        this.drivers = new ArrayList<TestClient>();
+        this.banco = _banco;
+        this.contaCompany = new ContaCorrente(_login, _senha, 200000);
+        //banco.addConta(_login, _senha, contaCompany);
     }
 
     public void run(){
@@ -42,86 +60,101 @@ public class TestServer extends Thread implements Serializable{
     }
 
     public static void main(String[] args) throws Exception {
+        // Configuração do servidor AlphaBank
+        String alphabankHost = "localhost";
+        int alphabankPort = 2000;
 
-        TestServer sevenGO = new TestServer();
-        sevenGO.start();
-        Security.addProvider(new BouncyCastleProvider());
-        ServerSocket serverSocket = new ServerSocket(3000);
-        System.out.println("Aguardando conexão do cliente...");
+        startClient(alphabankHost, alphabankPort);
+        startServer(3000);
+    }
 
-        // Chave e IV usados para criptografia e descriptografia
-        byte[] chave = new byte[16];
-        Arrays.fill(chave, (byte) 0); // Preencha a chave com zeros neste exemplo
+    public static void  startServer(int port) throws Exception{
+        try {
 
-        byte[] iv = new byte[16];
-        Arrays.fill(iv, (byte) 0); // Preencha o IV com zeros neste exemplo
+            ServerSocket serverSocket = new ServerSocket(port);
+            AlphaBankServer banco =  new AlphaBankServer();
+            String login = "Company";
+            String senha = "123456";
 
-        while (true) {
-            Socket clientSocket = serverSocket.accept();
-            System.out.println("Conexão estabelecida com " + clientSocket.getInetAddress());
+            TestServer sevenGO = new TestServer(banco, login, senha);
+            sevenGO.start();
+            Security.addProvider(new BouncyCastleProvider());
+            System.out.println("Servidor Company iniciado. Aguardando conexões...");
 
-            DataInputStream input = new DataInputStream(clientSocket.getInputStream());
-            DataOutputStream output = new DataOutputStream(clientSocket.getOutputStream());
+            // Chave e IV usados para criptografia e descriptografia
+            byte[] chave = new byte[16];
+            Arrays.fill(chave, (byte) 0); // Preencha a chave com zeros neste exemplo
 
-            // Receba a mensagem criptografada do cliente
-            byte[] encryptedMessage = new byte[1024];
-            int length = input.read(encryptedMessage);
-            byte[] encryptedMessageBytes = new byte[length];
-            System.arraycopy(encryptedMessage, 0, encryptedMessageBytes, 0, length);
+            byte[] iv = new byte[16];
+            Arrays.fill(iv, (byte) 0); // Preencha o IV com zeros neste exemplo
 
-            // Descriptografe a mensagem usando a classe Crypto
-            byte[] decryptedMessageBytes = Crypto.decrypt(encryptedMessageBytes, chave, iv);
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                //System.out.println("Conexão estabelecida com " + clientSocket.getInetAddress());
 
-            // Converte a mensagem descriptografada para String
-            String decryptedMessage = new String(decryptedMessageBytes);
+                DataInputStream input = new DataInputStream(clientSocket.getInputStream());
+                DataOutputStream output = new DataOutputStream(clientSocket.getOutputStream());
 
-            // Imprima a mensagem descriptografada
-            //System.out.println("Mensagem Recebida do Cliente: " + decryptedMessage);
+                // Receba a mensagem criptografada do cliente
+                byte[] encryptedMessage = new byte[1024];
+                int length = input.read(encryptedMessage);
+                byte[] encryptedMessageBytes = new byte[length];
+                System.arraycopy(encryptedMessage, 0, encryptedMessageBytes, 0, length);
 
-            // Analisa a mensagem JSON usando a classe JsonSchema
-            sevenGO.idRota = JsonSchema.analisarMensagem(decryptedMessage, "idRota");
-            boolean solicitacao = Boolean.parseBoolean(JsonSchema.analisarMensagem(decryptedMessage, "solicitacao"));
+                // Descriptografe a mensagem usando a classe Crypto
+                byte[] decryptedMessageBytes = Crypto.decrypt(encryptedMessageBytes, chave, iv);
 
-            // Simule a criação da mensagem com as edges da rota (exemplo)
-    
-            String edges = buscaRotaID(sevenGO.idRota, sevenGO.getRotas(), sevenGO);
-            //System.out.println("Edges: " + edges);
+                // Converte a mensagem descriptografada para String
+                String decryptedMessage = new String(decryptedMessageBytes);
 
-            // Crie uma mensagem JSON da rota usando a classe JsonSchema
-            String mensagemRota = JsonSchema.criarRotaJson(sevenGO.idRota, edges);
-            // Criptografe a mensagem da rota usando a classe Crypto
-            byte[] encryptedResponse = Crypto.encrypt(mensagemRota.getBytes(), chave, iv);
-            // Envie o objeto TestServer serializado para o cliente
-            // Envie a resposta criptografada ao cliente
-            output.write(encryptedResponse);
-            output.flush();
+                // Imprima a mensagem descriptografada
+                //System.out.println("Mensagem Recebida do Cliente: " + decryptedMessage);
 
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
-            objectOutputStream.writeObject(sevenGO);
-            objectOutputStream.flush();
-            
-            //TestSumo t1 = new TestSumo(sevenGO);
-            /* 
-            String[] rota = sevenGO.getItinerary();
+                // Analisa a mensagem JSON usando a classe JsonSchema
+                sevenGO.idRota = JsonSchema.analisarMensagem(decryptedMessage, "idRota");
+                boolean solicitacao = Boolean.parseBoolean(JsonSchema.analisarMensagem(decryptedMessage, "solicitacao"));
 
-            // Imprima o ID do itinerário
-            System.out.println("ID do Itinerário: " + sevenGO.getIDItinerary());
-            
-            // Imprima as edges do itinerário
-            System.out.println("Edges do Itinerário:");
-            for (String edge : rota) {
-                System.out.println(edge);
-            }            
-            */
-            // Aguarde até que a primeira thread termine
-            /*try {
-                sevenGO.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-}
-            t1.start();*/
-            // Fecha a conexão com o cliente
-            clientSocket.close();
+                // Simule a criação da mensagem com as edges da rota (exemplo)
+        
+                String edges = buscaRotaID(sevenGO.idRota, sevenGO.getRotas(), sevenGO);
+                //System.out.println("Edges: " + edges);
+
+                // Crie uma mensagem JSON da rota usando a classe JsonSchema
+                String mensagemRota = JsonSchema.criarRotaJson(sevenGO.idRota, edges);
+                // Criptografe a mensagem da rota usando a classe Crypto
+                byte[] encryptedResponse = Crypto.encrypt(mensagemRota.getBytes(), chave, iv);
+                // Envie o objeto TestServer serializado para o cliente
+                // Envie a resposta criptografada ao cliente
+                output.write(encryptedResponse);
+                output.flush();
+
+                ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+                System.out.println("Rota enviada ao Driver: " + clientSocket.getInetAddress());
+                objectOutputStream.writeObject(sevenGO);
+                objectOutputStream.flush();
+                
+                // Fecha a conexão com o cliente
+                clientSocket.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void startClient(String host, int port){
+        try {
+
+            Security.addProvider(new BouncyCastleProvider());
+            Socket socket = new Socket(host, port);
+            System.out.println("Company conectada com AlphaBank na porta: " + port);
+
+            DataInputStream input = new DataInputStream(socket.getInputStream());
+            DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+
+            //socket.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -199,5 +232,4 @@ public class TestServer extends Thread implements Serializable{
     public boolean isOn() {
             return this.on;
     }
-
 }

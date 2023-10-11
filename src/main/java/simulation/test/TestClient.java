@@ -2,21 +2,42 @@ package simulation.test;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import simulation.test.banco.CriarContaRequest;
+import de.tudresden.sumo.objects.SumoColor;
+import it.polito.appeal.traci.SumoTraciConnection;
+import simulation.test.banco.AlphaBankServer;
+import simulation.test.sumo.Cars;
+
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.Security;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
-public class TestClient extends Thread{
+public class TestClient extends Thread implements Serializable{
     
+    private String idDriver;
+    private String senhaDriver;
+    private AlphaBankServer banco;
+    private ArrayList<Cars> cars;
+    private ArrayList<TestClient> drivers;
+    private TestServer company;
+    private SumoTraciConnection sumo;
+    private static Cars carro;
+
+    public TestClient(String _idDriver, String _senha){
+        this.idDriver = _idDriver;
+        this.senhaDriver = _senha;
+        this.cars = new ArrayList<>(); // Inicialize a lista cars aqui
+        cadastraCarros();
+    }
+
     public static void main(String[] args) throws Exception {
 
         // Configuração do servidor Company
@@ -24,17 +45,19 @@ public class TestClient extends Thread{
         int companyPort = 3000;
 
         connectToCompany(companyHost, companyPort);
-
+ 
         // Configuração do servidor AlphaBank
         String alphabankHost = "localhost";
         int alphabankPort = 2000;
 
-        //connectToAlphaBank(alphabankHost, alphabankPort);
-        
+        connectToAlphaBank(alphabankHost, alphabankPort);
+
     }
 
     public static void connectToCompany(String host, int port) {
-        try {
+        try {  
+    
+            TestClient william = new TestClient("William", "22");
             Security.addProvider(new BouncyCastleProvider());
 
             Socket socket = new Socket(host, port);
@@ -84,13 +107,13 @@ public class TestClient extends Thread{
             TestServer receivedTestServer = (TestServer) objectInputStream.readObject();
             System.out.println("Rota recebida e pronto para iniciar!");
 
-            
-            TestSumo s1 = new TestSumo(receivedTestServer);
+            carro = william.criaCarro();
+       
+            TestSumo s1 = new TestSumo(receivedTestServer, carro);
             s1.start();
-
-            // Feche a conexão com o servidor
+            
+            //Feche a conexão com o servidor
             socket.close();
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -100,12 +123,10 @@ public class TestClient extends Thread{
         try {
             Security.addProvider(new BouncyCastleProvider());
             Socket socket = new Socket(host, port);
-
+            System.out.println("Driver conectado com AlphaBank na porta: " + port);
             
             DataInputStream input = new DataInputStream(socket.getInputStream());
             DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-
-            criarConta(output);
 
             socket.close();
 
@@ -123,19 +144,105 @@ public class TestClient extends Thread{
         return idRota;
     }
 
-    public static void criarConta(DataOutputStream output){
-        // Crie uma solicitação de criação de conta
-        CriarContaRequest criarContaRequest = new CriarContaRequest("login", "senha",2000);
+    public void setCars(Cars _car){
+        cars.add(_car);
+    }
 
-        // Envie a solicitação de criação de conta para o AlphaBankServer
-        ObjectOutputStream objectOutputStream;
+    public ArrayList<Cars> getCars(){
+        return cars;
+    }
+
+    public void cadastraCarros(){
         try {
-            objectOutputStream = new ObjectOutputStream(output);
-            objectOutputStream.writeObject(criarContaRequest);
-            System.out.println("Conta Driver criada!");
-            objectOutputStream.flush();
-        } catch (IOException e) {
+            //fuelType: 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
+            for (int i = 0; i < 100; i++){
+                String idCar = "CAR" + (i+1);
+                if (i < 25){
+                    int fuelType = 2;
+                    int fuelPreferential = 2;
+                    double fuelPrice = 3.40;
+                    int personCapacity = 4;
+                    int personNumber = 1;
+                    SumoColor green = new SumoColor(0, 255, 0, 126);
+                    Cars a1 = new Cars(true, idCar, green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+                    setCars(a1);
+                } else if (i >= 25 && i < 50){
+                    int fuelType = 1;
+                    int fuelPreferential = 1;
+                    double fuelPrice = 2.50;
+                    int personCapacity = 2;
+                    int personNumber = 1;
+                    SumoColor blue = new SumoColor(255, 0, 0, 126);
+                    Cars a1 = new Cars(true, idCar, blue,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+                    setCars(a1);
+                } else if (i >= 50 && i < 75){
+                    int fuelType = 3;
+                    int fuelPreferential = 3;
+                    double fuelPrice = 3.10;
+                    int personCapacity = 2;
+                    int personNumber = 1;
+                    SumoColor yellow = new SumoColor(255, 0, 255, 126);
+                    Cars a1 = new Cars(true, idCar, yellow,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+                    setCars(a1);
+                } else {
+                    int fuelType = 4;
+                    int fuelPreferential = 2;
+                    double fuelPrice = 3.40;
+                    int personCapacity = 2;
+                    int personNumber = 1;
+                    SumoColor red = new SumoColor(255, 255, 0, 126);
+                    Cars a1 = new Cars(true, idCar, red,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+                    setCars(a1);
+                }
+            }
+        } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+    
+    // Método para buscar um carro por ID
+    public Cars buscarCarroPorId(String id) {
+        for (Cars carro : cars) {
+            if (carro.getIdAuto().equals(id)) {
+                return carro; // Retorna o carro se o ID corresponder
+            }
+        }
+        return null; // Retorna null se nenhum carro correspondente foi encontrado com o ID especificado
+    }
+
+    public void cadastrarDrivers(){
+        for (int i = 0; i < 200; i++){
+            String idDriver = "Driver" + (i + 1);
+            String senha = "aux" + (i + 1);
+            String idCar = "CAR" + (i + 1);
+            TestClient driver = new TestClient(idDriver, senha);
+            setDriver(driver);
+        }
+    }
+
+    public void setDriver(TestClient _driver){
+        drivers.add(_driver);
+    }
+
+    public ArrayList<TestClient> getDrivers(){
+        return drivers;
+    }
+
+    // Cria carro temporario
+    public Cars criaCarro(){
+		try {
+            // fuelType: 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
+            int fuelType = 2;
+            int fuelPreferential = 2;
+            double fuelPrice = 3.40;
+            int personCapacity = 1;
+            int personNumber = 1;
+            SumoColor green = new SumoColor(0, 255, 0, 126);
+            Cars a1 = new Cars(true, "CAR2", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+            return a1;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

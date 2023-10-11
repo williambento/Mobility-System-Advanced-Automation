@@ -26,4 +26,12 @@ public class JsonSchema {
             return null; // Campo não encontrado
         }
     }
+
+    public static String carDadosJson(String idAuto, double co2Emission, double distanciaPercorrida) {
+        JSONObject json = new JSONObject();
+        json.put("idAuto", idAuto);
+        json.put("CO2Emission", co2Emission);
+        json.put("DistanciaPercorrida", distanciaPercorrida);
+        return json.toString();
+    }
 }

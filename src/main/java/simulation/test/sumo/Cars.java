@@ -4,6 +4,7 @@ import de.tudresden.sumo.cmd.Vehicle;
 import java.util.ArrayList;
 
 import it.polito.appeal.traci.SumoTraciConnection;
+import simulation.test.JsonSchema;
 import de.tudresden.sumo.objects.SumoColor;
 import de.tudresden.sumo.objects.SumoPosition2D;
 
@@ -25,6 +26,7 @@ public class Cars extends Thread {
 	private ArrayList<DataCars> drivingRepport;
 	private double totalDistance;
 	private double qtCombustivel;
+	private String dadosJson; // Campo para armazenar os dados JSON
 	
 	public Cars(boolean _on_off, String _idAuto, SumoColor _colorAuto, String _driverID, SumoTraciConnection _sumo, long _acquisitionRate,
 			int _fuelType, int _fuelPreferential, double _fuelPrice, int _personCapacity, int _personNumber) throws Exception {
@@ -71,6 +73,7 @@ public class Cars extends Thread {
 				e.printStackTrace();
 			}
 		}
+
 	}
 
 	public void atualizaSensores() {
@@ -80,10 +83,10 @@ public class Cars extends Thread {
 				SumoPosition2D sumoPosition2D;
 				sumoPosition2D = (SumoPosition2D) sumo.do_job_get(Vehicle.getPosition(this.idAuto));
 
-				System.out.println("AutoID: " + this.getIdAuto());
-				System.out.println("RoadID: " + (String) this.sumo.do_job_get(Vehicle.getRoadID(this.idAuto)));
-				System.out.println("RouteID: " + (String) this.sumo.do_job_get(Vehicle.getRouteID(this.idAuto)));
-				System.out.println("RouteIndex: " + this.sumo.do_job_get(Vehicle.getRouteIndex(this.idAuto)));
+				//System.out.println("AutoID: " + this.getIdAuto());
+				//System.out.println("RoadID: " + (String) this.sumo.do_job_get(Vehicle.getRoadID(this.idAuto)));
+				//System.out.println("RouteID: " + (String) this.sumo.do_job_get(Vehicle.getRouteID(this.idAuto)));
+				//System.out.println("RouteIndex: " + this.sumo.do_job_get(Vehicle.getRouteIndex(this.idAuto)));
 				
 				DataCars _repport = new DataCars(
 
@@ -127,7 +130,7 @@ public class Cars extends Thread {
 				this.drivingRepport.add(_repport);
 
 				//System.out.println("Data: " + this.drivingRepport.size());
-				System.out.println("idAuto = " + this.drivingRepport.get(this.drivingRepport.size() - 1).getAutoID());
+				//System.out.println("idAuto = " + this.drivingRepport.get(this.drivingRepport.size() - 1).getAutoID());
 				//System.out.println(
 				//		"timestamp = " + this.drivingRepport.get(this.drivingRepport.size() - 1).getTimeStamp());
 				//System.out.println("X=" + this.drivingRepport.get(this.drivingRepport.size() - 1).getX_Position() + ", "
@@ -139,8 +142,8 @@ public class Cars extends Thread {
 				//System.out.println("Fuel Type = " + this.fuelType);
 				//System.out.println("Fuel Price = " + this.fuelPrice);
 
-				System.out.println(
-						"CO2 Emission = " + this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission());
+				//System.out.println(
+						//"CO2 Emission = " + this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission());
 
 				//System.out.println();
 				//System.out.println("************************");
@@ -176,10 +179,14 @@ public class Cars extends Thread {
 				double currentDistance = (double) sumo.do_job_get(Vehicle.getDistance(this.idAuto)); // Obtenha a distância atual
 				double intervalDistance = currentDistance - previousDistance; // Calcule a diferença de distância no intervalo atual
 				this.totalDistance += intervalDistance; // Adicione a diferença à distância total
-				System.out.println("Distancia Total Percorrida = " + totalDistance);
+				//System.out.println("Distancia Total Percorrida = " + totalDistance);
 
-				System.out.println("************************");
-
+				// Chame o método para criar os dados JSON e salve no campo
+                this.dadosJson = JsonSchema.carDadosJson(this.idAuto, this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission(), this.totalDistance);
+				System.out.println(dadosJson);
+				setJsonDados(dadosJson);
+				System.out.println(getJsonDados());
+				//System.out.println(dadosJson);
 			} else {
 				//System.out.println("SUMO is closed...");
 			}
@@ -277,5 +284,17 @@ public class Cars extends Thread {
 	@Override
 	public String toString() {
     	return "Carro: " + idAuto;
+	}
+
+	public String getJsonDados(){
+		return dadosJson;
+	}
+
+	public void setJsonDados(String json){
+		dadosJson = json;
+	}
+
+	public Cars criaCarro() {
+		return null;
 	}
 }

@@ -1,7 +1,6 @@
 package simulation.test;
 
 import simulation.test.sumo.TransportService;
-import de.tudresden.sumo.cmd.Vehicle;
 import de.tudresden.sumo.objects.SumoColor;
 import it.polito.appeal.traci.SumoTraciConnection;
 import simulation.test.sumo.Cars;
@@ -12,8 +11,9 @@ public class TestSumo extends Thread {
     private SumoTraciConnection sumo;
     private TestServer company;
 
-    public TestSumo(TestServer company){
+    public TestSumo(TestServer company, Cars carro){
         this.company = company;
+        this.carro = carro;
     }
 
     public void run() {
@@ -30,13 +30,11 @@ public class TestSumo extends Thread {
 			sumo.runServer(8000);
 			if (company.isOn()) {
 				String idTransport = "Lavras";
-				carro = criaCarro();
+                carro = criaCarro();
 				TransportService tS1 = new TransportService(true, idTransport, company, carro, sumo);
 				tS1.start();
 				Thread.sleep(5000);
-				carro.start();
-                //Thread.sleep(100);
-				//Cars a1 = new Cars(true, "CAR1", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+                carro.start();
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -44,8 +42,6 @@ public class TestSumo extends Thread {
 			e.printStackTrace();
 		}
     }
-    
-    
 
     public Cars criaCarro(){
 		try {

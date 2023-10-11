@@ -1,14 +1,13 @@
 package simulation.test.banco;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 import java.util.HashMap;
 
-public class AlphaBankServer {
+public class AlphaBankServer extends Thread implements Serializable {
     private Map<String, ContaCorrente> contas;
     private ServerSocket serverSocket;
 
@@ -26,30 +25,9 @@ public class AlphaBankServer {
                 System.out.println("Conexão estabelecida com " + clientSocket.getInetAddress());
 
                 // Crie um objeto ObjectOutputStream e ObjectInputStream para enviar e receber objetos
-                ObjectOutputStream out = new ObjectOutputStream(clientSocket.getOutputStream());
+                /*ObjectOutputStream out = new ObjectOutputStream(clientSocket.getOutputStream());
                 ObjectInputStream in = new ObjectInputStream(clientSocket.getInputStream());
-                
-                // Leia a solicitação do cliente
-                Object requestObject;
-                try {
-                    requestObject = in.readObject();
-                    // Verifique o tipo de solicitação e forneça o serviço bancário correspondente
-                    if (requestObject instanceof CriarContaRequest) {
-                        CriarContaRequest criarContaRequest = (CriarContaRequest) requestObject;
-                        ContaCorrente conta = criarConta(criarContaRequest.getLogin(), criarContaRequest.getSenha(), criarContaRequest.getSaldoInicial());
-                        System.out.println("Conta Driver criada!");
-                        System.out.println("Login: " + criarContaRequest.getLogin());
-                        System.out.println("Saldo: " + criarContaRequest.getSaldoInicial());
-                        out.writeObject(conta);
-                    } else if (requestObject instanceof AutenticarRequest) {
-                        AutenticarRequest autenticarRequest = (AutenticarRequest) requestObject;
-                        ContaCorrente conta = autenticar(autenticarRequest.getLogin(), autenticarRequest.getSenha());
-                        out.writeObject(conta);
-                    }
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-
+                */
                 // Feche a conexão com o cliente
                 clientSocket.close();
             }
