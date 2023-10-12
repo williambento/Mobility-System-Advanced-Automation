@@ -1,22 +1,17 @@
-package app.financeiro;
+package app.gasolina;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
 
 import app.json.JsonSchema;
 import simulation.test.Crypto;
 
 public class AcessoMultiplo extends Thread {
     private Socket clienteSocket;
-    private int numeroConta;
-    private ArrayList<ContaCorrente> contasMotoristas;
 
     public AcessoMultiplo(Socket clienteSocket) {
         this.clienteSocket = clienteSocket;
-        this.contasMotoristas = new ArrayList<ContaCorrente>();
     }
 
     @Override
@@ -51,77 +46,22 @@ public class AcessoMultiplo extends Thread {
             String mensagemDescString = new String(mensagemDescriptografadaBytes);
             String[] resposta = JsonSchema.convertJsonString(mensagemDescString);
     
-            System.out.println(resposta[0]);
             //System.out.println(resposta[1]);
-            if ("criarConta".equals(resposta[1])){
-                criarConta(resposta[0], resposta[2], gerarNumeroConta());
+            if ("abastecer".equals(resposta[1])){
                 
-                String msg = "Conta Criada!";
+                String msg = "Abastecido!";
                 byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());
                             
                 // Envie a mensagem criptografada ao servidor
                 _out.write(envio);
                 _out.flush();
                 
-            } else if ("pagar".equals(resposta[1])){
-                //transacao();
-
-                String msg = "Pagamento Feito!";
-                byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());
-                            
-                // Envie a mensagem criptografada ao servidor
-                _out.write(envio);
-                _out.flush();
-
-            } else if ("saldo".equals(resposta[1])){
-                ContaCorrente contaMotorista = buscarContaPorID(resposta[0]);
-                //double saldo = contaMotorista.getSaldo();
-                System.out.println(contaMotorista);
-                // Converter o saldo em uma string
-                //String saldoString = Double.toString(saldo);
-                String saldoString = "Sucessful";
-                //System.out.println(saldoString);
-                byte[] envio = Crypto.encrypt(saldoString.getBytes(), geraChave(), geraIv());
-                            
-                // Envie a mensagem criptografada ao servidor
-                _out.write(envio);
-                _out.flush();
-                
-            }
-                
+            } 
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    // criar Conta Corrente dos motoristas
-    public void criarConta(String _login, String _senha, int _numero){
-        ContaCorrente contaMotorista = new ContaCorrente(_login, _senha, _numero);
-        contasMotoristas.add(contaMotorista);
-        //System.out.println(contaMotorista);
-    }
-
-    // gera o numero da conta por Random
-    private int gerarNumeroConta() {
-        Random random = new Random();
-        int numeroAleatorio = random.nextInt(9000) + 1000;
-        return numeroAleatorio;
-    }
-
-    public ArrayList<ContaCorrente> getContasMotoristas(){
-        return contasMotoristas;
-    }
-
-    // buscar conta por id
-    public ContaCorrente buscarContaPorID(String id) {
-        for (ContaCorrente conta : contasMotoristas) {
-            if (conta.getLogin().trim().equalsIgnoreCase(id.trim())) {
-                return conta; // Retorna a conta se encontrada
-            }
-        }
-        return null; // Retorna null se a conta não for encontrada
     }
 
     // gera chave para a criptografia

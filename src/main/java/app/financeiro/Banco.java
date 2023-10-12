@@ -16,6 +16,7 @@ public class Banco extends Thread implements Serializable{
             while (true) {
                 // aguarda e aceita conexões de clientes
                 Socket clienteSocket = bancoSocket.accept();
+                System.out.println("Cliente conectado " + clienteSocket.getInetAddress());
                 
                 // cria uma nova thread para lidar com o cliente 
                 // assim é possível lidar com vários clientes ao mesmo tempo
@@ -25,7 +26,6 @@ public class Banco extends Thread implements Serializable{
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("Todos os Clientes possuem Contas!");
     }
 
     public String getNome() {

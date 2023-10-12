@@ -4,6 +4,24 @@ import org.json.JSONObject;
 
 public class JsonSchema {
 
+    // solicitar rota
+    public static String solicitarRota(String _request, String _id, String _senha) {
+        JSONObject json = new JSONObject();
+        json.put("request", _request);
+        json.put("motorista", _id);
+        json.put("senha", _senha);
+        return json.toString();
+    }
+
+    // abastecer
+    public static String abastecer(String _request, String _id, String _senha) {
+        JSONObject json = new JSONObject();
+        json.put("request", _request);
+        json.put("motorista", _id);
+        json.put("senha", _senha);
+        return json.toString();
+    }
+
     // padrao de requisição para criar conta no Banco
     public static String criarConta(String _request, String _id, String _senha) {
         JSONObject json = new JSONObject();
@@ -42,12 +60,12 @@ public class JsonSchema {
         String motorista = jsonObject.getString("motorista");
         String senha = jsonObject.getString("senha");
         // se a requisição for do tipo pagar, novos campos são adicionados
-        if("pagar".equals(requisicao)){
+        /*if("saldo".equals(requisicao)){
             String posto = jsonObject.getString("posto");
             String valor = jsonObject.getString("valor");
             String[] resultado = new String[]{motorista, requisicao, senha, posto, valor};
             return resultado;
-        }
+        }*/
         // cria um array de strings e coloque os valores nele
         String[] resultado = new String[]{motorista, requisicao, senha};
         // retorna o array de strings
