@@ -1,6 +1,7 @@
 package simulation.test;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -17,6 +18,7 @@ import simulation.test.sumo.Route;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.ServerSocket;
@@ -132,7 +134,9 @@ public class CompanyServer extends Thread implements Serializable{
                 System.out.println("Rota enviada ao Driver: " + clientSocket.getInetAddress());
                 objectOutputStream.writeObject(sevenGO);
                 objectOutputStream.flush();
-                
+                /* 
+                ObjectInputStream objectInputStream = new ObjectInputStream(clientSocket.getInputStream());
+                System.out.println(objectInputStream);*/
                 // Fecha a conexão com o cliente
                 clientSocket.close();
             }

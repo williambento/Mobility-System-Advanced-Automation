@@ -12,6 +12,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -36,12 +37,12 @@ public class DriverClient extends Thread implements Serializable{
         this.idDriver = _idDriver;
         this.senhaDriver = _senha;
         this.cars = new ArrayList<>(); // Inicialize a lista cars aqui
-        cadastraCarros();
+        //cadastraCarros();
     }
 
     public void run() {
         /* SUMO */
-        String sumo_bin = "sumo-gui";		
+        /*String sumo_bin = "sumo-gui";		
         String config_file = "map/map.sumo.cfg";
 
         // Sumo connection
@@ -62,7 +63,8 @@ public class DriverClient extends Thread implements Serializable{
                 while (company.isOn()) {
                     carro.atualizaSensores();
                     dadosJson = carro.getJsonDados(); // Obtém os dados JSON
-                    System.out.println("Dados JSON: " + dadosJson); // Faça o que quiser com os dados JSON
+                    System.out.println("Dados JSON: " + dadosJson); // Faça o que quiser com os dados JSO
+                    //enviarDadosParaCompany(dadosJson);
                     // Comparar o JSON atual com o JSON anterior
                     if (dadosJson.equals(jsonAnterior)) {
                         // Se forem iguais, saia do loop
@@ -79,16 +81,16 @@ public class DriverClient extends Thread implements Serializable{
 			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
+		}*/
     }
 
     public static void main(String[] args) throws Exception {
 
         // Configuração do servidor Company
-        String companyHost = "localhost";
+        /*String companyHost = "localhost";
         int companyPort = 3000;
 
-        connectToCompany(companyHost, companyPort);
+        connectToCompany(companyHost, companyPort);*/
  
         // Configuração do servidor AlphaBank
         String alphabankHost = "localhost";
@@ -166,23 +168,44 @@ public class DriverClient extends Thread implements Serializable{
         }
     }
 
-    public static void connectToAlphaBank(String host, int port){
+    public static void connectToAlphaBank(String host, int port) throws InterruptedException {
         try {
             Security.addProvider(new BouncyCastleProvider());
             Socket socket = new Socket(host, port);
             System.out.println("Driver conectado com AlphaBank na porta: " + port);
-            
             DataInputStream input = new DataInputStream(socket.getInputStream());
             DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-
+            // Primeira solicitação
+            Thread thread1 = new Thread(() -> {
+                try {
+                    criaConta("William", "123", output, input);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+            // Segunda solicitação
+            Thread thread2 = new Thread(() -> {
+                try {
+                    pagar("William", "22", 2500.00, "Ipiranga", output, input);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+            // Inicie as threads
+            thread1.start();
+            thread2.start();
+            // Aguarde até que ambas as threads terminem
+            thread1.join();
+            thread2.join();
+            // Feche a conexão com o servidor
             socket.close();
-
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    
 
     public String getDadosJson() {
         return dadosJson;
@@ -199,6 +222,36 @@ public class DriverClient extends Thread implements Serializable{
         return idRota;
     }
 
+    // Método que envia os dados do car para a Company
+    public void enviarDadosParaCompany(String dadosJson) throws Exception {
+        try {
+            Socket companySocket = new Socket("localhost", 3000); // Substitua pelo endereço e porta corretos do servidor CompanyServer
+    
+            DataOutputStream output = new DataOutputStream(companySocket.getOutputStream());
+            // Crie uma chave de 128 bits (16 bytes)
+            byte[] chave = new byte[16];
+            // Preencha a chave com zeros neste exemplo
+            Arrays.fill(chave, (byte) 0);
+
+            // Crie um IV de 16 bytes (inicialização aleatória)
+            byte[] iv = new byte[16];
+            // Preencha o IV com zeros neste exemplo
+            Arrays.fill(iv, (byte) 0);
+
+            // Criptografe a mensagem usando a classe Crypto
+            byte[] encryptedMessage = Crypto.encrypt(dadosJson.getBytes(), chave, iv);
+            //System.out.println("Mensagem Cliente c/Criptografia: " + encryptedMessage);
+            
+            output.write(encryptedMessage);
+            output.flush();
+    
+            // Feche a conexão com o servidor CompanyServer
+            companySocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
     public void setCars(Cars _car){
         cars.add(_car);
     }
@@ -299,5 +352,78 @@ public class DriverClient extends Thread implements Serializable{
             e.printStackTrace();
             return null;
         }
+    }
+
+    public static void criaConta(String _idDriver, String _senha, DataOutputStream _out, DataInputStream _in){
+        try {
+
+            String requestCriaConta = JsonSchema.criarConta(_idDriver, _senha);
+            // Criptografe a mensagem usando a classe Crypto
+            byte[] encryptedMessage = Crypto.encrypt(requestCriaConta.getBytes(), geraChave(), geraIv());
+            
+            // Envie a mensagem criptografada ao servidor
+            _out.write(encryptedMessage);
+            _out.flush();
+
+            // Receba a resposta criptografada do servidor
+            byte[] encryptedResponse = new byte[1024];
+            int length = _in.read(encryptedResponse);
+            byte[] encryptedResponseBytes = new byte[length];
+            System.arraycopy(encryptedResponse, 0, encryptedResponseBytes, 0, length);
+       
+            // Descriptografe a resposta usando a classe Crypto
+            byte[] decryptedResponseBytes = Crypto.decrypt(encryptedResponseBytes, geraChave(), geraIv());
+            // Converte a resposta descriptografada para String
+            String resposta = new String(decryptedResponseBytes);
+            System.out.println(resposta);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void pagar(String _idDriver, String _senha, Double _valor, String _idPosto, DataOutputStream _out, DataInputStream _in){
+        try {
+            String requestCriaConta = JsonSchema.pagar(_idDriver, _senha, _valor, _idPosto);
+            // Criptografe a mensagem usando a classe Crypto
+            byte[] encryptedMessage = Crypto.encrypt(requestCriaConta.getBytes(), geraChave(), geraIv());
+            
+            // Envie a mensagem criptografada ao servidor
+            _out.write(encryptedMessage);
+            _out.flush();
+
+            // Receba a resposta criptografada do servidor
+            byte[] encryptedResponse = new byte[1024];
+            int length = _in.read(encryptedResponse);
+            byte[] encryptedResponseBytes = new byte[length];
+            System.arraycopy(encryptedResponse, 0, encryptedResponseBytes, 0, length);
+       
+            // Descriptografe a resposta usando a classe Crypto
+            byte[] decryptedResponseBytes = Crypto.decrypt(encryptedResponseBytes, geraChave(), geraIv());
+            // Converte a resposta descriptografada para String
+            String resposta = new String(decryptedResponseBytes);
+            System.out.println(resposta);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Gera chave para a criptografia
+    public static byte[] geraChave(){
+        // Crie uma chave de 128 bits (16 bytes)
+        byte[] chave = new byte[16];
+        // Preencha a chave com zeros neste exemplo
+        Arrays.fill(chave, (byte) 0);
+        return chave;
+    }
+
+    // Gera iv para a criptografia
+    public static byte[] geraIv(){
+        // Crie um IV de 16 bytes (inicialização aleatória)
+        byte[] iv = new byte[16];
+        // Preencha o IV com zeros neste exemplo
+        Arrays.fill(iv, (byte) 0);
+        return iv;
     }
 }

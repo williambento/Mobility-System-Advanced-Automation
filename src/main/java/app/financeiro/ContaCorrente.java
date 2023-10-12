@@ -1,17 +1,20 @@
 package app.financeiro;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class ContaCorrente extends Thread{
+public class ContaCorrente extends Thread implements Serializable{
     private double saldo;
     private String login;
     private String senha;
+    private int numeroConta;
     private ArrayList<String> extrato; //Lista que armazenará as informações das transações feitas
 
-    public ContaCorrente(String _login, String _senha, double saldoInicial) {
-        this.saldo = saldoInicial;
+    public ContaCorrente(String _login, String _senha, int _numero) {
+        this.saldo = 10000;
         this.login = _login;
         this.senha = _senha;
+        this.numeroConta = _numero;
         this.extrato = new ArrayList<String>();
     }
 
@@ -19,6 +22,14 @@ public class ContaCorrente extends Thread{
         return saldo;
     }
 
+    public int getNumeroConta(){
+        return numeroConta;
+    }
+
+    public String getLogin(){
+        return login;
+    }
+    
     public void depositar(double valor) {
         saldo += valor;
         registrarTransacao("Depósito", valor);

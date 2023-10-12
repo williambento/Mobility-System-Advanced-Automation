@@ -34,4 +34,20 @@ public class JsonSchema {
         json.put("DistanciaPercorrida", distanciaPercorrida);
         return json.toString();
     }
+
+    public static String criarConta(String _id, String _senha){
+        JSONObject json = new JSONObject();
+        json.put("idDriver", _id);
+        json.put("senha", _senha);
+        return json.toString();
+    }
+
+    public static String pagar(String _id, String _senha, double _valor, String _idDestino){
+        JSONObject json = new JSONObject();
+        json.put("idOrigem", _id);
+        json.put("senha", _senha);
+        json.put("valor", _valor);
+        json.put("idDestino", _idDestino);
+        return json.toString();
+    }
 }
