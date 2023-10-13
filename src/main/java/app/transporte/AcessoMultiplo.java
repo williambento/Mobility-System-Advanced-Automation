@@ -20,29 +20,36 @@ import app.json.JsonSchema;
 import app.criptografia.Crypto;
 
 public class AcessoMultiplo extends Thread implements Serializable{
-    private Socket clienteSocket;
+    private transient Socket clienteSocket;
     private ArrayList<Route> routes;
     private String[] rotaExecutavel;
     private String idRota;
     private boolean on;
+    private boolean verifica;
 
     public AcessoMultiplo() {
+        this.on =  true;
+        this.verifica = true;
         this.routes = new ArrayList<Route>();
         addRoutes();
     }
 
     @Override
-    public void run() {
-        this.on =  true;
+    public void start() {
         try {
             // entrada e saida de dados
             DataInputStream input = new DataInputStream(clienteSocket.getInputStream());
             DataOutputStream output = new DataOutputStream(clienteSocket.getOutputStream());
             ObjectOutputStream objeto = new ObjectOutputStream(clienteSocket.getOutputStream());
 
-
             // IMPLEMENTAR INTERAÇÃO COM O CLIENTE AQUI
-            request(input, output, objeto);
+
+            while (verifica) {
+                request(input, output, objeto);
+            }
+
+            // Fecha a conexão com o cliente após sair do loop
+            clienteSocket.close();
             
         } catch (IOException e) {
             e.printStackTrace();
@@ -51,8 +58,6 @@ public class AcessoMultiplo extends Thread implements Serializable{
 
     public void request(DataInputStream _in, DataOutputStream _out, ObjectOutputStream _objeto){
         try {
-            AcessoMultiplo seven = new AcessoMultiplo();
-            
             // recebendo a mensagem criptografada do cliente
             byte[] mensagemCriptografada = new byte[1024];
             int length = _in.read(mensagemCriptografada); // pega o tamanho
@@ -67,9 +72,9 @@ public class AcessoMultiplo extends Thread implements Serializable{
             String[] resposta = JsonSchema.convertJsonString(mensagemDescString);
     
             //System.out.println(resposta[1]);
-            if ("rota".equals(resposta[1])){
-                idRota = generateRandomID();
-                String msg = buscaRotaID(idRota);
+            if ("rota".equals(resposta[0])){
+                idRota = this.generateRandomID();
+                String msg = this.buscaRotaID(idRota);
                 byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());
                             
                 // Envie a mensagem criptografada ao servidor
@@ -78,11 +83,16 @@ public class AcessoMultiplo extends Thread implements Serializable{
 
                 System.out.println("Rota enviada ao Driver!");
                 //_objeto.writeObject(this.getItinerary());
-                _objeto.writeObject(seven);
+                System.out.println(this.getItinerary()[0]);
+                setIDItinerary(this.getItinerary()[0]);
+                _objeto.writeObject(this);
                 _objeto.flush();
-                
-            } 
-            clienteSocket.close();
+    
+            } else if ("dataCar".equals(resposta[0])){
+                System.out.println(resposta[3]);
+            } else {
+                verifica =  false;
+            }
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -153,6 +163,10 @@ public class AcessoMultiplo extends Thread implements Serializable{
         rotaExecutavel = rota;
     }
 
+    public void setIDItinerary(String _id){
+        idRota = _id;
+    }
+
     // gera chave para a criptografia
     public static byte[] geraChave(){
         // Crie uma chave de 128 bits (16 bytes)
@@ -187,7 +201,7 @@ public class AcessoMultiplo extends Thread implements Serializable{
 
     //verifica se a rota esta sendo executada ou nao
     public boolean isOn() {
-            return this.on;
+        return this.on;
     }
 
     public void setClientSocket(Socket clienteSocket) {

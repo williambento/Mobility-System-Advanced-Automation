@@ -13,10 +13,16 @@ public class EmpresaMobilidade extends Thread implements Serializable{
         try {
             empresaSocket = new ServerSocket(PORT);
             System.out.println("Servidor da Empresa de Mobilidade aguardando conexões...");
+
+            // Inicia a conexão com o servidor remoto como cliente
+            /*String servidorRemotoHost = "127.0.0.1";
+            int servidorRemotoPorta = 2000;  // Substitua pela porta real do servidor remoto
+            Socket servidorRemotoSocket = new Socket(servidorRemotoHost, servidorRemotoPorta);*/
+            
             while (true) {
                 // aguarda e aceita conexões de clientes
                 Socket clienteSocket = empresaSocket.accept();
-                System.out.println("Cliente conectado " + clienteSocket.getInetAddress());
+                //System.out.println("Cliente conectado " + clienteSocket.getInetAddress());
                 // cria uma nova thread para lidar com o cliente 
                 // assim é possível lidar com vários clientes ao mesmo tempo
                 AcessoMultiplo clienteHandler = new AcessoMultiplo();

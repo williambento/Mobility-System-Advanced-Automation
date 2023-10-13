@@ -27,10 +27,13 @@ public class Cars extends Thread {
 	private double totalDistance;
 	private double qtCombustivel;
 	private String dadosJson; // Campo para armazenar os dados JSON
+
+	private String routeID;
 	
 	public Cars(boolean _on_off, String _idAuto, SumoColor _colorAuto, String _driverID, SumoTraciConnection _sumo, long _acquisitionRate,
 			int _fuelType, int _fuelPreferential, double _fuelPrice, int _personCapacity, int _personNumber) throws Exception {
 
+		
 		this.on_off = _on_off;
 		this.idAuto = _idAuto;
 		this.colorAuto = _colorAuto;
@@ -67,8 +70,8 @@ public class Cars extends Thread {
 		
 		while (this.on_off) {
 			try {
-				/*Cars.sleep(this.acquisitionRate);
-				this.atualizaSensores();*/
+				/*Cars.sleep(this.acquisitionRate);*/
+				//this.atualizaSensores();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -180,9 +183,9 @@ public class Cars extends Thread {
 				double intervalDistance = currentDistance - previousDistance; // Calcule a diferença de distância no intervalo atual
 				this.totalDistance += intervalDistance; // Adicione a diferença à distância total
 				//System.out.println("Distancia Total Percorrida = " + totalDistance);
-
+				this.routeID = (String) this.sumo.do_job_get(Vehicle.getLaneID(this.idAuto));
 				// Chame o método para criar os dados JSON e salve no campo
-                this.dadosJson = JsonSchema.carDadosJson(this.idAuto, this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission(), this.totalDistance);
+                this.dadosJson = JsonSchema.carDados("dataCar", this.idAuto, this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission(), this.totalDistance);
 				//System.out.println(dadosJson);
 			} else {
 				//System.out.println("SUMO is closed...");
@@ -294,4 +297,9 @@ public class Cars extends Thread {
 	public Cars criaCarro() {
 		return null;
 	}
+
+	public String getRouteID(){
+		return routeID;
+	}
+
 }

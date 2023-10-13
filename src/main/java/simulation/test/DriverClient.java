@@ -59,7 +59,7 @@ public class DriverClient extends Thread implements Serializable{
                 carro.start();
 				TransportService tS1 = new TransportService(true, idTransport, company, carro, sumo);
 				tS1.start();
-				Thread.sleep(5000);
+				//Thread.sleep(5000);
                 while (company.isOn()) {
                     carro.atualizaSensores();
                     dadosJson = carro.getJsonDados(); // Obtém os dados JSON

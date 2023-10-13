@@ -15,22 +15,28 @@ public class DriverClient implements Serializable {
         String HOST;
         int PORT;
 
+        System.out.println("------------------------------");
         System.out.println("AREA DE LOGIN");
         System.out.print("LOGIN: ");
         String id = scanner.nextLine();
         System.out.print("SENHA: ");
         String senha = scanner.nextLine();
-  
+        System.out.println("------------------------------");
+        System.out.println(id + " LOGADO NO SISTEMA DE TRANSPORTE!");
+        System.out.println("------------------------------");
+
         while (loop) {
-            System.out.println("Escolha uma opção:");
+            System.out.println("ESCOLHA UMA OPÇÃO:");
             System.out.println("------------------------------");
             System.out.println("1. Solicitar Rota");
             System.out.println("2. Abastecer");
             //System.out.println("3. Buscar Conta");
             System.out.println("3. Sair");
+            System.out.println("------------------------------");
 
             int choice = scanner.nextInt();
             scanner.nextLine(); // Consumir a quebra de linha
+            System.out.println("------------------------------");
             if (choice == 3){
                 HOST = null;
                 PORT = 0;

@@ -28,7 +28,7 @@ public class TransportService extends Thread {
     @Override
 	public void run() {
 		try {
-			
+
 			this.initializeRoutes();
 
 			//this.auto.start();
@@ -41,7 +41,8 @@ public class TransportService extends Thread {
 				Thread.sleep(this.auto.getAcquisitionRate());
 				if (this.getSumo().isClosed()) {
 					this.on_off = false;
-					System.out.println("SUMO is closed...");
+					//System.out.println("VIAGEM FINALIZADA, DADOS GERADOS!");
+					//System.out.println("------------------------------");
 				}
 			}
 
@@ -65,6 +66,8 @@ public class TransportService extends Thread {
 			//sumo.do_job_set(Vehicle.add(this.auto.getIdAuto(), "DEFAULT_VEHTYPE", this.itinerary.getIdItinerary(), 0,
 			//		0.0, 0, (byte) 0));
 			
+			//System.out.println(auto.getIdAuto());
+			//System.out.println(itinerary.getItinerary());
 			sumo.do_job_set(Vehicle.addFull(this.auto.getIdAuto(), 				//vehID
 											this.itinerary.getIDItinerary(), 	//routeID 
 											"DEFAULT_VEHTYPE", 					//typeID 

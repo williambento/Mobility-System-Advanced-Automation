@@ -1,15 +1,18 @@
 package app.json;
 
+import javax.print.DocFlavor.STRING;
+
 import org.json.JSONObject;
 
 public class JsonSchema {
 
     // dados carro
-    public static String carDados(String idAuto, double co2Emission, double distanciaPercorrida) {
+    public static String carDados(String _request, String idAuto, double co2Emission, double distanciaPercorrida) {
         JSONObject json = new JSONObject();
+        json.put("request", _request);
         json.put("idAuto", idAuto);
         json.put("CO2Emission", co2Emission);
-        json.put("DistanciaPercorrida", distanciaPercorrida);
+        json.put("distanciaPercorrida", distanciaPercorrida);
         return json.toString();
     }
 
@@ -59,34 +62,36 @@ public class JsonSchema {
         json.put("valor", _valor);
         return json.toString();
     }
-
-    // padrao dados retornados pela simulacao
-    public static String carDadosJson(String idAuto, double co2Emission, double distanciaPercorrida) {
-        JSONObject json = new JSONObject();
-        json.put("idAuto", idAuto);
-        json.put("CO2Emission", co2Emission);
-        json.put("DistanciaPercorrida", distanciaPercorrida);
-        return json.toString();
-    }
-
+    
     // converte dados vindos da requisição criar conta
     public static String[] convertJsonString(String _objeto){
         // Crie um objeto JSONObject a partir da string
         JSONObject jsonObject = new JSONObject(_objeto);
         // acessa cada elemento individual
         String requisicao = jsonObject.getString("request");
-        String motorista = jsonObject.getString("motorista");
-        String senha = jsonObject.getString("senha");
-        // se a requisição for do tipo pagar, novos campos são adicionados
-        /*if("saldo".equals(requisicao)){
-            String posto = jsonObject.getString("posto");
-            String valor = jsonObject.getString("valor");
-            String[] resultado = new String[]{motorista, requisicao, senha, posto, valor};
+        if (requisicao.equals("rota")){
+            String motorista = jsonObject.getString("motorista");
+            String senha = jsonObject.getString("senha");
+            String[] resultado = new String[]{requisicao, motorista, senha};
             return resultado;
-        }*/
-        // cria um array de strings e coloque os valores nele
-        String[] resultado = new String[]{motorista, requisicao, senha};
-        // retorna o array de strings
+        } else if (requisicao.equals("dataCar")) {
+            String idCar = jsonObject.getString("idAuto");
+            double co2 = jsonObject.getDouble("CO2Emission");
+            double distancia = jsonObject.getDouble("distanciaPercorrida");
+            String co2Str = Double.toString(co2);
+            String distanciaStr = Double.toString(distancia);
+            // cria um array de strings e coloque os valores nele
+            String[] resultado = new String[]{requisicao, idCar, co2Str, distanciaStr};
+            return resultado;
+        } 
+        String[] resultado = new String[]{requisicao};
         return resultado;
+    }
+
+    // padrao de requisição para buscarContar
+    public static String finalizar(String _request) {
+        JSONObject json = new JSONObject();
+        json.put("request", _request);
+        return json.toString();
     }
 }

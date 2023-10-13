@@ -3,7 +3,6 @@ package app.motoristas;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -31,7 +30,9 @@ public class ConectServer extends Thread{
     private AcessoMultiplo company;
     private SumoTraciConnection sumo;
     private String[] rotaExecutavel;
-
+    private String dadosJson;
+    private String ultimaEdge;
+    private boolean statusRota;
 
     public ConectServer(String host, int port, String _id, String _senha, int _opcao) {
         listaMotoristas = new ArrayList<Motorista>();
@@ -40,10 +41,11 @@ public class ConectServer extends Thread{
         this.id = _id;
         this.senha = _senha;
         this.opcao = _opcao;
+        this.statusRota = true;
         gerarMotoristas();
     }
 
-    public void simula(){
+    public void simula(AcessoMultiplo _company, DataOutputStream _out, Socket _socket){
         /* SUMO */
         String sumo_bin = "sumo-gui";		
         String config_file = "map/map.sumo.cfg";
@@ -55,30 +57,50 @@ public class ConectServer extends Thread{
 
         try {
 			sumo.runServer(8000);
+            this.carro = criaCarro();
             String jsonAnterior = null;
-			if (company.isOn()) {
-				String idTransport = "Lavras";
-                carro = criaCarro();
-                carro.start();
-				TransportService tS1 = new TransportService(true, idTransport, company, carro, sumo);
+
+			if (_company.isOn()) {
+
+				TransportService tS1 = new TransportService(true, "CAR2", _company, carro, sumo);
 				tS1.start();
-				Thread.sleep(5000);
-                while (company.isOn()) {
+                Thread.sleep(5000);
+                carro.start();
+		
+                while (_company.isOn()) {
+
                     carro.atualizaSensores();
-                    /*dadosJson = carro.getJsonDados(); // Obtém os dados JSON
+                    dadosJson = carro.getJsonDados(); // Obtém os dados JSON
+                    dataServidor(dadosJson, _out);
                     System.out.println("Dados JSON: " + dadosJson); // Faça o que quiser com os dados JSO
-                    //enviarDadosParaCompany(dadosJson);
+            
+                    String input = carro.getRouteID();
+                    String result = input.replaceAll("_[^\\s]*", "");
+ 
                     // Comparar o JSON atual com o JSON anterior
-                    if (dadosJson.equals(jsonAnterior)) {
-                        // Se forem iguais, saia do loop
+                    if (result.equals(ultimaEdge)) {
+                        //_socket.close();
+                        msgFinaliza(_out);
+                        sumo.close();
+                        System.out.print("");
+                        System.out.println("------------------------------");
+                        System.out.println("VIAGEM FINALIZADA, DADOS GERADOS!");
+                        System.out.println("------------------------------");
+                        statusRota = false;
                         break;
                     }
-                    // Atualize o JSON anterior com o JSON atual
-                    jsonAnterior = dadosJson;*/
+                    if (dadosJson.equals(jsonAnterior)) {
+                        // metodo para sai do loop
+                        break;
+                    }
+                    // atualiza o JSON anterior com o JSON atual
+                    jsonAnterior = dadosJson;
                     Thread.sleep(1000);
                 }
+                Thread.sleep(5000); // Pausa por 1 segundo antes de sair do loop
 			} else {
-                System.out.println("Fim da Simulação");
+                System.out.println("VIAGEM FINALIZADA, DADOS GERADOS!");
+                System.out.println("------------------------------");
             }
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -99,18 +121,13 @@ public class ConectServer extends Thread{
             switch (opcao) {
                 case 1:
                     if(gerenciador == true){
-                        try {
-                            motorista = this.getMotoristaPorID(id);
-                            solicitarRota("rota", motorista, input, output, objeto);
-                            carro = this.criaCarro();
-                            Thread.sleep(100);
-                            //this.start();
-                            simula();
-                            gerenciador = false;
-                            motoristaSocket.close();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                        motorista = this.getMotoristaPorID(id);
+                        solicitarRota("rota", motorista, input, output, objeto, motoristaSocket);
+                        //carro = this.criaCarro();
+                        //Thread.sleep(100);
+                        //this.start();
+                        gerenciador = false;
+                        motoristaSocket.close();
                     } else {
                         System.out.println("Você solicitou uma rota recentimente aguarde!");
                         gerenciador = true;
@@ -132,6 +149,38 @@ public class ConectServer extends Thread{
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // retornar dados simulação para o servidor
+    public void dataServidor(String _json, DataOutputStream _out){
+        try{
+            String requestCriaConta = _json;
+            // Criptografe a mensagem usando a classe Crypto
+            byte[] encryptedMessage = Crypto.encrypt(requestCriaConta.getBytes(), geraChave(), geraIv());
+            
+            // Envie a mensagem criptografada ao servidor
+            _out.write(encryptedMessage);
+            _out.flush();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    //msg finaliza
+    public void msgFinaliza(DataOutputStream _out){
+        try{
+            String requestCriaConta = JsonSchema.finalizar("fim");
+            // Criptografe a mensagem usando a classe Crypto
+            byte[] encryptedMessage = Crypto.encrypt(requestCriaConta.getBytes(), geraChave(), geraIv());
+            
+            // Envie a mensagem criptografada ao servidor
+            _out.write(encryptedMessage);
+            _out.flush();
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -165,7 +214,7 @@ public class ConectServer extends Thread{
     }
 
     // request para abastecer o carro
-    public void solicitarRota(String _request, Motorista _motorista, DataInputStream _in, DataOutputStream _out, ObjectInputStream _objeto){
+    public void solicitarRota(String _request, Motorista _motorista, DataInputStream _in, DataOutputStream _out, ObjectInputStream _objeto, Socket _socket){
         try{
             String requestCriaConta = JsonSchema.solicitarRota(_request, motorista.getIdMotorista(), motorista.getSenhaMotorista());
             // Criptografe a mensagem usando a classe Crypto
@@ -185,12 +234,14 @@ public class ConectServer extends Thread{
             byte[] decryptedResponseBytes = Crypto.decrypt(encryptedResponseBytes, geraChave(), geraIv());
             // Converte a resposta descriptografada para String
             String resposta = new String(decryptedResponseBytes);
-            System.out.println(resposta);
-
+            //System.out.println(resposta);
+            pegaUltimaEdge(resposta);
             // recebe um objeto to tipo String[] com os dados de execução da rota
             AcessoMultiplo receivedTestServer =  (AcessoMultiplo) _objeto.readObject();
-            System.out.println("Rota recebida e pronto para iniciar!");
+            System.out.println("Rota recebida, INICIANDO VIAGEM!");
+            System.out.println("------------------------------");
             //this.setCompany(receivedTestServer);
+            simula(receivedTestServer, _out, _socket);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -251,6 +302,7 @@ public class ConectServer extends Thread{
             int personNumber = 1;
             SumoColor green = new SumoColor(0, 255, 0, 126);
             Cars a1 = new Cars(true, "CAR2", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+            setCar(a1);
             return a1;
         } catch (Exception e) {
             e.printStackTrace();
@@ -260,6 +312,21 @@ public class ConectServer extends Thread{
 
     public void setCompany(AcessoMultiplo receivedTestServer){
         this.company = receivedTestServer;
+    }
+
+    public void setCar(Cars _car){
+        this.carro = _car;
+    }
+
+    public Cars getCar(){
+        return carro;
+    }
+
+    //pegando a ultima edge para verificação futura
+    public void pegaUltimaEdge(String _rota){
+        String[] partes = _rota.split(" "); // Divide a string em partes usando o espaço como delimitador
+        int tamanho = partes.length;
+        ultimaEdge = partes[tamanho - 1]; // Pega o último item da lista
     }
 
     // requisição para criar conta
