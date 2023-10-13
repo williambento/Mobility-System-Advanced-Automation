@@ -42,7 +42,7 @@ public class DriverClient extends Thread implements Serializable{
 
     public void run() {
         /* SUMO */
-        /*String sumo_bin = "sumo-gui";		
+        String sumo_bin = "sumo-gui";		
         String config_file = "map/map.sumo.cfg";
 
         // Sumo connection
@@ -81,7 +81,7 @@ public class DriverClient extends Thread implements Serializable{
 			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
-		}*/
+		}
     }
 
     public static void main(String[] args) throws Exception {

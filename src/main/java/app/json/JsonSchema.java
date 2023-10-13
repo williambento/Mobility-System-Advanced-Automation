@@ -4,6 +4,15 @@ import org.json.JSONObject;
 
 public class JsonSchema {
 
+    // dados carro
+    public static String carDados(String idAuto, double co2Emission, double distanciaPercorrida) {
+        JSONObject json = new JSONObject();
+        json.put("idAuto", idAuto);
+        json.put("CO2Emission", co2Emission);
+        json.put("DistanciaPercorrida", distanciaPercorrida);
+        return json.toString();
+    }
+
     // solicitar rota
     public static String solicitarRota(String _request, String _id, String _senha) {
         JSONObject json = new JSONObject();
@@ -48,6 +57,15 @@ public class JsonSchema {
         json.put("senha", _senha);
         json.put("posto", _idDestino);
         json.put("valor", _valor);
+        return json.toString();
+    }
+
+    // padrao dados retornados pela simulacao
+    public static String carDadosJson(String idAuto, double co2Emission, double distanciaPercorrida) {
+        JSONObject json = new JSONObject();
+        json.put("idAuto", idAuto);
+        json.put("CO2Emission", co2Emission);
+        json.put("DistanciaPercorrida", distanciaPercorrida);
         return json.toString();
     }
 

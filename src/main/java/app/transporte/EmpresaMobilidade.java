@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class EmpresaMobilidade extends Thread implements Serializable {
+public class EmpresaMobilidade extends Thread implements Serializable{
     private String nome;
     private ServerSocket empresaSocket;
 
@@ -19,7 +19,8 @@ public class EmpresaMobilidade extends Thread implements Serializable {
                 System.out.println("Cliente conectado " + clienteSocket.getInetAddress());
                 // cria uma nova thread para lidar com o cliente 
                 // assim é possível lidar com vários clientes ao mesmo tempo
-                AcessoMultiplo clienteHandler = new AcessoMultiplo(clienteSocket);
+                AcessoMultiplo clienteHandler = new AcessoMultiplo();
+                clienteHandler.setClientSocket(clienteSocket);
                 clienteHandler.start();
             }
         } catch (IOException e) {

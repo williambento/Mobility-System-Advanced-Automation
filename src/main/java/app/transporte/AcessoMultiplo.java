@@ -19,36 +19,40 @@ import org.xml.sax.SAXException;
 import app.json.JsonSchema;
 import app.criptografia.Crypto;
 
-public class AcessoMultiplo extends Thread {
+public class AcessoMultiplo extends Thread implements Serializable{
     private Socket clienteSocket;
     private ArrayList<Route> routes;
     private String[] rotaExecutavel;
+    private String idRota;
+    private boolean on;
 
-    public AcessoMultiplo(Socket clienteSocket) {
-        this.clienteSocket = clienteSocket;
+    public AcessoMultiplo() {
         this.routes = new ArrayList<Route>();
         addRoutes();
     }
 
     @Override
     public void run() {
+        this.on =  true;
         try {
             // entrada e saida de dados
             DataInputStream input = new DataInputStream(clienteSocket.getInputStream());
             DataOutputStream output = new DataOutputStream(clienteSocket.getOutputStream());
+            ObjectOutputStream objeto = new ObjectOutputStream(clienteSocket.getOutputStream());
+
 
             // IMPLEMENTAR INTERAÇÃO COM O CLIENTE AQUI
-            request(input, output);
-
-            clienteSocket.close();
+            request(input, output, objeto);
             
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void request(DataInputStream _in, DataOutputStream _out){
+    public void request(DataInputStream _in, DataOutputStream _out, ObjectOutputStream _objeto){
         try {
+            AcessoMultiplo seven = new AcessoMultiplo();
+            
             // recebendo a mensagem criptografada do cliente
             byte[] mensagemCriptografada = new byte[1024];
             int length = _in.read(mensagemCriptografada); // pega o tamanho
@@ -64,15 +68,22 @@ public class AcessoMultiplo extends Thread {
     
             //System.out.println(resposta[1]);
             if ("rota".equals(resposta[1])){
-                String rota = generateRandomID();
-                String msg = buscaRotaID(rota);
+                idRota = generateRandomID();
+                String msg = buscaRotaID(idRota);
                 byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());
                             
                 // Envie a mensagem criptografada ao servidor
                 _out.write(envio);
                 _out.flush();
+
+                System.out.println("Rota enviada ao Driver!");
+                //_objeto.writeObject(this.getItinerary());
+                _objeto.writeObject(seven);
+                _objeto.flush();
                 
             } 
+            clienteSocket.close();
+
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {
@@ -164,5 +175,22 @@ public class AcessoMultiplo extends Thread {
     public String generateRandomID() {
         int i = new SecureRandom().nextInt(100) + 1; // Gera um número aleatório entre 1 e 100
         return "ID" + i;
+    }
+
+    public String[] getItinerary(){
+        return this.rotaExecutavel;
+    }
+
+    public String getIDItinerary(){
+        return this.idRota;
+    }
+
+    //verifica se a rota esta sendo executada ou nao
+    public boolean isOn() {
+            return this.on;
+    }
+
+    public void setClientSocket(Socket clienteSocket) {
+        this.clienteSocket = clienteSocket;
     }
 }

@@ -4,16 +4,20 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import org.python.modules.thread.thread;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.net.ConnectException;
 
 import app.criptografia.Crypto;
 import app.json.JsonSchema;
+import app.transporte.AcessoMultiplo;
+import de.tudresden.sumo.objects.SumoColor;
+import it.polito.appeal.traci.SumoTraciConnection;
+import app.transporte.TransportService;
+import app.carros.Cars;
 
 public class ConectServer extends Thread{
     private String host;
@@ -23,6 +27,10 @@ public class ConectServer extends Thread{
     private String senha;
     private int opcao;
     private ArrayList<Motorista> listaMotoristas;
+    private Cars carro;
+    private AcessoMultiplo company;
+    private SumoTraciConnection sumo;
+    private String[] rotaExecutavel;
 
 
     public ConectServer(String host, int port, String _id, String _senha, int _opcao) {
@@ -35,17 +43,79 @@ public class ConectServer extends Thread{
         gerarMotoristas();
     }
 
+    public void simula(){
+        /* SUMO */
+        String sumo_bin = "sumo-gui";		
+        String config_file = "map/map.sumo.cfg";
+
+        // Sumo connection
+        this.sumo = new SumoTraciConnection(sumo_bin, config_file);
+        sumo.addOption("start", "1"); // auto-run on GUI show
+        sumo.addOption("quit-on-end", "1"); // auto-close on end
+
+        try {
+			sumo.runServer(8000);
+            String jsonAnterior = null;
+			if (company.isOn()) {
+				String idTransport = "Lavras";
+                carro = criaCarro();
+                carro.start();
+				TransportService tS1 = new TransportService(true, idTransport, company, carro, sumo);
+				tS1.start();
+				Thread.sleep(5000);
+                while (company.isOn()) {
+                    carro.atualizaSensores();
+                    /*dadosJson = carro.getJsonDados(); // Obtém os dados JSON
+                    System.out.println("Dados JSON: " + dadosJson); // Faça o que quiser com os dados JSO
+                    //enviarDadosParaCompany(dadosJson);
+                    // Comparar o JSON atual com o JSON anterior
+                    if (dadosJson.equals(jsonAnterior)) {
+                        // Se forem iguais, saia do loop
+                        break;
+                    }
+                    // Atualize o JSON anterior com o JSON atual
+                    jsonAnterior = dadosJson;*/
+                    Thread.sleep(1000);
+                }
+			} else {
+                System.out.println("Fim da Simulação");
+            }
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+
     public void start() {
         try {
+            boolean gerenciador = true;
             Socket motoristaSocket = new Socket(host, port);
             //System.out.println("Conexão criada para " + motorista.getIdMotorista());
             // entrada e saida de dados
             DataInputStream input = new DataInputStream(motoristaSocket.getInputStream());
             DataOutputStream output = new DataOutputStream(motoristaSocket.getOutputStream());
+            ObjectInputStream objeto = new ObjectInputStream(motoristaSocket.getInputStream());
             switch (opcao) {
                 case 1:
-                    motorista = this.getMotoristaPorID(id);
-                    solicitarRota("rota", motorista, input, output);
+                    if(gerenciador == true){
+                        try {
+                            motorista = this.getMotoristaPorID(id);
+                            solicitarRota("rota", motorista, input, output, objeto);
+                            carro = this.criaCarro();
+                            Thread.sleep(100);
+                            //this.start();
+                            simula();
+                            gerenciador = false;
+                            motoristaSocket.close();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        System.out.println("Você solicitou uma rota recentimente aguarde!");
+                        gerenciador = true;
+                        motoristaSocket.close();
+                    }
                     break;
                 case 2:
                     motorista = this.getMotoristaPorID(id);
@@ -95,7 +165,7 @@ public class ConectServer extends Thread{
     }
 
     // request para abastecer o carro
-    public void solicitarRota(String _request, Motorista _motorista, DataInputStream _in, DataOutputStream _out){
+    public void solicitarRota(String _request, Motorista _motorista, DataInputStream _in, DataOutputStream _out, ObjectInputStream _objeto){
         try{
             String requestCriaConta = JsonSchema.solicitarRota(_request, motorista.getIdMotorista(), motorista.getSenhaMotorista());
             // Criptografe a mensagem usando a classe Crypto
@@ -116,14 +186,19 @@ public class ConectServer extends Thread{
             // Converte a resposta descriptografada para String
             String resposta = new String(decryptedResponseBytes);
             System.out.println(resposta);
-            // fecha conexao
+
+            // recebe um objeto to tipo String[] com os dados de execução da rota
+            AcessoMultiplo receivedTestServer =  (AcessoMultiplo) _objeto.readObject();
+            System.out.println("Rota recebida e pronto para iniciar!");
+            //this.setCompany(receivedTestServer);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     // gera chave para a criptografia
-    public static byte[] geraChave(){
+    public byte[] geraChave(){
         // Crie uma chave de 128 bits (16 bytes)
         byte[] chave = new byte[16];
         // Preencha a chave com zeros neste exemplo
@@ -132,7 +207,7 @@ public class ConectServer extends Thread{
     }
 
     // gera iv para a criptografia
-    public static byte[] geraIv(){
+    public byte[] geraIv(){
         // Crie um IV de 16 bytes (inicialização aleatória)
         byte[] iv = new byte[16];
         // Preencha o IV com zeros neste exemplo
@@ -163,6 +238,28 @@ public class ConectServer extends Thread{
             }
         }
         return null; // Retorna null se nenhum motorista for encontrado com o ID especificado
+    }
+
+    // Cria carro temporario
+    public Cars criaCarro(){
+		try {
+            // fuelType: 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
+            int fuelType = 2;
+            int fuelPreferential = 2;
+            double fuelPrice = 3.40;
+            int personCapacity = 1;
+            int personNumber = 1;
+            SumoColor green = new SumoColor(0, 255, 0, 126);
+            Cars a1 = new Cars(true, "CAR2", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+            return a1;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public void setCompany(AcessoMultiplo receivedTestServer){
+        this.company = receivedTestServer;
     }
 
     // requisição para criar conta

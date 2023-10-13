@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import app.json.JsonSchema;
-import simulation.test.Crypto;
+import app.criptografia.Crypto;
 
 public class AcessoMultiplo extends Thread {
     private Socket clienteSocket;

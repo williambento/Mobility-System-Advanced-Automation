@@ -1,10 +1,11 @@
 package app;
 
+import java.io.Serializable;
 import java.util.Scanner;
 
 import app.motoristas.ConectServer;
 
-public class DriverClient {
+public class DriverClient implements Serializable {
 
     public static void main(String[] args) throws InterruptedException {
 
