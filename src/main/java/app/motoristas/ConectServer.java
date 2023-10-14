@@ -47,7 +47,7 @@ public class ConectServer extends Thread{
 
     public void simula(AcessoMultiplo _company, DataOutputStream _out, Socket _socket){
         /* SUMO */
-        String sumo_bin = "sumo-gui";		
+        String sumo_bin = "sumo";		
         String config_file = "map/map.sumo.cfg";
 
         // Sumo connection
@@ -128,6 +128,7 @@ public class ConectServer extends Thread{
                         //this.start();
                         gerenciador = false;
                         motoristaSocket.close();
+                        Socket motoristaSocketBanco = new Socket("127.0.0.1", 2000);
                     } else {
                         System.out.println("Você solicitou uma rota recentimente aguarde!");
                         gerenciador = true;

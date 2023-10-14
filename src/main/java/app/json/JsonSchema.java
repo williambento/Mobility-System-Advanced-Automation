@@ -53,12 +53,12 @@ public class JsonSchema {
     }
 
     // padrao de requisição para criar conta no Banco
-    public static String pagar(String _request, String _id, String _senha, String _idDestino, double _valor) {
+    public static String pagar(String _request, String _idCompany, String _senha, String _idDriver, double _valor) {
         JSONObject json = new JSONObject();
         json.put("request", _request);
-        json.put("motorista", _id);
+        json.put("empresa", _idCompany);
         json.put("senha", _senha);
-        json.put("posto", _idDestino);
+        json.put("driver", _idDriver);
         json.put("valor", _valor);
         return json.toString();
     }
@@ -83,7 +83,15 @@ public class JsonSchema {
             // cria um array de strings e coloque os valores nele
             String[] resultado = new String[]{requisicao, idCar, co2Str, distanciaStr};
             return resultado;
-        } 
+        } else if (requisicao.equals("pagar")){
+            String company = jsonObject.getString("empresa");
+            String senha = jsonObject.getString("senha");
+            String driver = jsonObject.getString("driver");
+            double valor = jsonObject.getDouble("valor");
+            String valorStr = Double.toString(valor);
+            String[] resultado = new String[]{requisicao, company, senha, driver, valorStr};
+            return resultado;
+        }
         String[] resultado = new String[]{requisicao};
         return resultado;
     }

@@ -10,33 +10,38 @@ import app.json.JsonSchema;
 import app.criptografia.Crypto;
 
 public class AcessoMultiplo extends Thread {
-    private Socket clienteSocket;
+    private Socket clienteEmpresaSocket;
+    private Socket clienteDriverSocket;
     private int numeroConta;
     private ArrayList<ContaCorrente> contasMotoristas;
 
     public AcessoMultiplo(Socket clienteSocket) {
-        this.clienteSocket = clienteSocket;
+        this.clienteEmpresaSocket = clienteSocket;
         this.contasMotoristas = new ArrayList<ContaCorrente>();
     }
 
     @Override
     public void run() {
         try {
-            // entrada e saida de dados
-            DataInputStream input = new DataInputStream(clienteSocket.getInputStream());
-            DataOutputStream output = new DataOutputStream(clienteSocket.getOutputStream());
+            // entrada e saida de dados para o cliente empresa
+            DataInputStream inputEmpresa = new DataInputStream(clienteEmpresaSocket.getInputStream());
+            DataOutputStream outputEmpresa = new DataOutputStream(clienteEmpresaSocket.getOutputStream());
+
+            // entrada e saida de dados para o cliente driver
+            DataInputStream inputDriver = new DataInputStream(clienteEmpresaSocket.getInputStream());
+            DataOutputStream outputDriver = new DataOutputStream(clienteEmpresaSocket.getOutputStream());
 
             // IMPLEMENTAR INTERAÇÃO COM O CLIENTE AQUI
-            request(input, output);
+            request(inputEmpresa, outputEmpresa, inputDriver, outputDriver);
 
-            clienteSocket.close();
+            clienteEmpresaSocket.close();
             
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void request(DataInputStream _in, DataOutputStream _out){
+    public void request(DataInputStream _in, DataOutputStream _out, DataInputStream _inDriver, DataOutputStream _outDriver){
         try {
             // recebendo a mensagem criptografada do cliente
             byte[] mensagemCriptografada = new byte[1024];
@@ -51,9 +56,8 @@ public class AcessoMultiplo extends Thread {
             String mensagemDescString = new String(mensagemDescriptografadaBytes);
             String[] resposta = JsonSchema.convertJsonString(mensagemDescString);
     
-            System.out.println(resposta[0]);
             //System.out.println(resposta[1]);
-            if ("criarConta".equals(resposta[1])){
+            if ("criarConta".equals(resposta[0])){
                 criarConta(resposta[0], resposta[2], gerarNumeroConta());
                 
                 String msg = "Conta Criada!";
@@ -63,15 +67,12 @@ public class AcessoMultiplo extends Thread {
                 _out.write(envio);
                 _out.flush();
                 
-            } else if ("pagar".equals(resposta[1])){
+            } else if ("pagar".equals(resposta[0])){
                 //transacao();
-
-                String msg = "Pagamento Feito!";
-                byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());
-                            
+                System.out.println(resposta[0]);
                 // Envie a mensagem criptografada ao servidor
-                _out.write(envio);
-                _out.flush();
+                /*_out.write(envio);
+                _out.flush();*/
 
             } else if ("saldo".equals(resposta[1])){
                 ContaCorrente contaMotorista = buscarContaPorID(resposta[0]);

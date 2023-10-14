@@ -22,15 +22,28 @@ import app.criptografia.Crypto;
 public class AcessoMultiplo extends Thread implements Serializable{
     private transient Socket clienteSocket;
     private ArrayList<Route> routes;
+    private ArrayList<Route> routesEmExecucao;
+    private ArrayList<Route> routesExecutada;
     private String[] rotaExecutavel;
     private String idRota;
     private boolean on;
     private boolean verifica;
+    private double distanciaPercorrida;
+    private double valorPago;
+    private int completas;
+    private Route rota;
+    private boolean buscaUmaRota;
 
     public AcessoMultiplo() {
         this.on =  true;
         this.verifica = true;
+        this.buscaUmaRota = true;
         this.routes = new ArrayList<Route>();
+        this.routesEmExecucao = new ArrayList<Route>();
+        this.routesExecutada = new ArrayList<Route>();
+        this.valorPago = 0.0;
+        this.completas = 0;
+        this.distanciaPercorrida = 0.0;
         addRoutes();
     }
 
@@ -72,25 +85,34 @@ public class AcessoMultiplo extends Thread implements Serializable{
             String[] resposta = JsonSchema.convertJsonString(mensagemDescString);
     
             //System.out.println(resposta[1]);
+            // gambiarra 
             if ("rota".equals(resposta[0])){
-                idRota = this.generateRandomID();
-                String msg = this.buscaRotaID(idRota);
-                byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());
-                            
-                // Envie a mensagem criptografada ao servidor
-                _out.write(envio);
-                _out.flush();
+                
+                    idRota = this.generateRandomID();
+                    String msg = this.buscaRotaID(idRota);
+                    byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());
+                                
+                    // Envie a mensagem criptografada ao servidor
+                    _out.write(envio);
+                    _out.flush();
 
-                System.out.println("Rota enviada ao Driver!");
-                //_objeto.writeObject(this.getItinerary());
-                System.out.println(this.getItinerary()[0]);
-                setIDItinerary(this.getItinerary()[0]);
-                _objeto.writeObject(this);
-                _objeto.flush();
-    
+                    System.out.println("Rota enviada ao Driver!");
+                    //_objeto.writeObject(this.getItinerary());
+                    System.out.println(this.getItinerary()[0]);
+                    setIDItinerary(this.getItinerary()[0]);
+                    _objeto.writeObject(this);
+                    _objeto.flush();
+
             } else if ("dataCar".equals(resposta[0])){
-                System.out.println(resposta[3]);
-            } else {
+                Double numeroValueOf = Double.valueOf(resposta[3]);
+                geraPagamento(numeroValueOf); 
+                System.out.println(resposta[0]);
+            } else if ("fim".equals(resposta[0])){
+                /*routesExecutada.add(rota);
+                routesEmExecucao.remove(rota);*/
+                //System.out.println("Rotas a serem executadas: " + getRotas());
+                //System.out.println("Rotas em execução: " + getRotasExecutando());
+                //System.out.println("Rotas já executadas: " + getRotasExecutadas());
                 verifica =  false;
             }
 
@@ -136,26 +158,40 @@ public class AcessoMultiplo extends Thread implements Serializable{
 
     // Método para obter as edges de uma determinada idRota
     public String buscaRotaID(String id) {
+
+        Route rotaEncontrada = null; // Inicialize a variável para armazenar a rota encontrada
         for (Route route : routes) {
             if (route.getRouteID().equals(id)) {
-                String edgesString  = route.getEdges();
-                // Divida a string em um array de arestas usando um caractere de separação (por exemplo, espaço em branco)
-                String[] edgesArray = edgesString.split(" "); // Altere o separador se necessário
-
-                String[] rotaExecutavel = new String[edgesArray.length + 1];
-                rotaExecutavel[0] = route.getRouteID(); // O primeiro elemento é o ID da rota
-                rotaExecutavel[1] = route.getEdges();
-                // Copie as arestas para o array a partir da posição 1
-                //System.arraycopy(edgesArray, 0, rotaExecutavel, 1, edgesArray.length);
-
-                this.setItinerary(rotaExecutavel);
-                return route.getEdges();            
+                rotaEncontrada = route; // Armazena a rota encontrada
+                break; // Sai do loop assim que encontrar a rota
             }
         }
+        if (rotaEncontrada != null) {
+            String edgesString = rotaEncontrada.getEdges();
+            String[] edgesArray = edgesString.split(" "); // Divida a string em um array de arestas
+            String[] rotaExecutavel = new String[edgesArray.length + 1];
+            rotaExecutavel[0] = rotaEncontrada.getRouteID(); // O primeiro elemento é o ID da rota
+            rotaExecutavel[1] = rotaEncontrada.getEdges();
+            routesEmExecucao.add(rotaEncontrada); // Adicione a rota encontrada em routesEmExecucao
+            routes.remove(rotaEncontrada); // Remova a rota encontrada de routes
+            this.setItinerary(rotaExecutavel);
+            rota = rotaEncontrada;
+            System.out.println(rota);
+            System.out.println(routesEmExecucao);
+            return rotaEncontrada.getEdges();
+        }
         return null; // Retorna null se a rota não for encontrada
+    }    
+    
+    public ArrayList<Route> getRotas(){
+        return routes;
     }
 
-    public ArrayList<Route> getRotas(){
+    public ArrayList<Route> getRotasExecutando(){
+        return routes;
+    }
+
+    public ArrayList<Route> getRotasExecutadas(){
         return routes;
     }
 
@@ -206,5 +242,26 @@ public class AcessoMultiplo extends Thread implements Serializable{
 
     public void setClientSocket(Socket clienteSocket) {
         this.clienteSocket = clienteSocket;
+    }
+
+    // metodo para emitir pagamento
+    public void geraPagamento(double distancia) {
+        this.distanciaPercorrida = distancia;
+        double pagamento = 3.25; // Cada 1000 metros completos equivalem a R$5
+        // Verifica se foram percorridos pelo menos 1000 metros
+
+        if (completas != 0 ){
+            this.distanciaPercorrida = this.distanciaPercorrida - (completas * 500);
+        }
+
+        if (this.distanciaPercorrida >= 500) {
+            completas = this.completas + 1; // Calcula quantos milhares de metros foram completos
+            this.valorPago += pagamento;
+        }
+    }
+
+    //retorna valor a pagar ao driver
+    public double getValor(){
+        return valorPago;
     }
 }
