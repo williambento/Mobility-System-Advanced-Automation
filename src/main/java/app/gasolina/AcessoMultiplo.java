@@ -47,7 +47,7 @@ public class AcessoMultiplo extends Thread {
             String[] resposta = JsonSchema.convertJsonString(mensagemDescString);
     
             //System.out.println(resposta[1]);
-            if ("abastecer".equals(resposta[1])){
+            if ("abastecer".equals(resposta[0])){
                 
                 String msg = "Abastecido!";
                 byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());

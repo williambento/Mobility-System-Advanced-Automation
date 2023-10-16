@@ -44,11 +44,12 @@ public class JsonSchema {
     }
 
     // padrao de requisição para buscarContar
-    public static String buscarConta(String _request, String _id, String _senha) {
+    public static String buscarConta(String _request, String _id, String _senha, int _litros) {
         JSONObject json = new JSONObject();
         json.put("request", _request);
         json.put("motorista", _id);
         json.put("senha", _senha);
+        json.put("litros", _litros);
         return json.toString();
     }
 
@@ -90,6 +91,13 @@ public class JsonSchema {
             double valor = jsonObject.getDouble("valor");
             String valorStr = Double.toString(valor);
             String[] resultado = new String[]{requisicao, company, senha, driver, valorStr};
+            return resultado;
+        } else if (requisicao.equals("abastecer")){
+            String driver = jsonObject.getString("motorista");
+            String senha = jsonObject.getString("senha");
+            int litros = jsonObject.getInt("litros");
+            String litrosStr = Integer.toString(litros);
+            String[] resultado = new String[]{requisicao, driver, senha, litrosStr};
             return resultado;
         }
         String[] resultado = new String[]{requisicao};

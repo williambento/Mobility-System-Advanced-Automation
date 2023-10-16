@@ -25,22 +25,22 @@ public class Cars extends Thread {
 
 	private ArrayList<DataCars> drivingRepport;
 	private double totalDistance;
-	private double qtCombustivel;
+	private double fuelTank;
 	private String dadosJson; // Campo para armazenar os dados JSON
 
+	private double speed;
 	private String routeID;
 	
 	public Cars(boolean _on_off, String _idAuto, SumoColor _colorAuto, String _driverID, SumoTraciConnection _sumo, long _acquisitionRate,
 			int _fuelType, int _fuelPreferential, double _fuelPrice, int _personCapacity, int _personNumber) throws Exception {
 
-		
 		this.on_off = _on_off;
 		this.idAuto = _idAuto;
 		this.colorAuto = _colorAuto;
 		this.driverID = _driverID;
 		this.sumo = _sumo;
 		this.acquisitionRate = _acquisitionRate;
-		this.qtCombustivel = 10.0; //inicialmente o carro começa com tanque cheio
+		this.fuelTank = 10.0; //inicialmente o carro começa com tanque cheio
 		
 		if((_fuelType < 0) || (_fuelType > 4)) {
 			this.fuelType = 4;
@@ -70,8 +70,8 @@ public class Cars extends Thread {
 		
 		while (this.on_off) {
 			try {
-				/*Cars.sleep(this.acquisitionRate);*/
-				//this.atualizaSensores();
+				/*Cars.sleep(this.acquisitionRate);
+				this.atualizaSensores();*/
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -100,6 +100,7 @@ public class Cars extends Thread {
 						(double) sumo.do_job_get(Vehicle.getDistance(this.idAuto)),
 
 						(double) sumo.do_job_get(Vehicle.getFuelConsumption(this.idAuto)),
+						
 						// Vehicle's fuel consumption in ml/s during this time step,
 						// to get the value for one step multiply with the step length; error value:
 						// -2^30
@@ -184,6 +185,13 @@ public class Cars extends Thread {
 				this.totalDistance += intervalDistance; // Adicione a diferença à distância total
 				//System.out.println("Distancia Total Percorrida = " + totalDistance);
 				this.routeID = (String) this.sumo.do_job_get(Vehicle.getLaneID(this.idAuto));
+				this.speed = (double) sumo.do_job_get(Vehicle.getSpeed(this.idAuto));
+				// monitora o consumo de gasolina
+				double consumo = (double) sumo.do_job_get(Vehicle.getFuelConsumption(this.idAuto)); // obtem o consumo de combustivel
+				System.out.println("Distancia: " + totalDistance);
+				controlaCombustiverl(consumo);	
+				System.out.println(getFuelConsumption());			
+
 				// Chame o método para criar os dados JSON e salve no campo
                 this.dadosJson = JsonSchema.carDados("dataCar", this.idAuto, this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission(), this.totalDistance);
 				//System.out.println(dadosJson);
@@ -235,6 +243,10 @@ public class Cars extends Thread {
 		}
 	}
 
+	public void setCombustivel(double _combustivel){
+		this.fuelTank = _combustivel;
+	}
+
 	public double getFuelPrice() {
 		return this.fuelPrice;
 	}
@@ -272,19 +284,19 @@ public class Cars extends Thread {
 		return this.totalDistance;
 	}
 
-	//metodo para abastecer o carro
-	public void abastecer(double litros){
-		qtCombustivel += litros;
+	// combustivel
+	public void controlaCombustiverl(double _consumo){
+		_consumo = miligramasParaLitros(_consumo);
+		//System.out.println("Combustível gasto no ultimo passo: " + _consumo);
+		this.fuelTank = this.fuelTank - _consumo;
+		setCombustivel(fuelTank);
+		//System.out.println("Tanque: " + fuelTank);
 	}
-
-	public double getCombustivel(){
-		return qtCombustivel;
-	}
-
+/* 
 	@Override
 	public String toString() {
     	return "Carro: " + idAuto;
-	}
+	}*/
 
 	public String getJsonDados(){
 		return dadosJson;
@@ -294,12 +306,29 @@ public class Cars extends Thread {
 		dadosJson = json;
 	}
 
-	public Cars criaCarro() {
-		return null;
-	}
-
 	public String getRouteID(){
 		return routeID;
+	}
+
+	public double getFuelConsumption(){
+		return this.fuelTank;
+	}
+
+	// converter mg em Litros
+	public static double miligramasParaLitros(double miligramas) {
+		double densidade = 770;
+        if (densidade <= 0) {
+            throw new IllegalArgumentException("A densidade deve ser um valor positivo.");
+        }
+
+        // Fórmula para conversão de miligramas para litros: litros = miligramas / (1000 * densidade)
+        double litros = miligramas / (1000 * densidade);
+        return litros;
+    }
+
+	//retorna a velocidade do carro
+	public double getSpeed(){
+		return speed;
 	}
 
 }

@@ -3,7 +3,6 @@ package app.transporte;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -15,11 +14,10 @@ import app.json.JsonSchema;
 public class EmpresaMobilidade extends Thread implements Serializable{
     private String nome;
     private ServerSocket empresaSocket;
-    private AcessoMultiplo acessoMultiplo; // Adicione uma instância de AcessoMultiplo
 
-    public EmpresaMobilidade() {
-        acessoMultiplo = new AcessoMultiplo(); // Inicialize uma única instância
-    }
+    /*public EmpresaMobilidade(){
+        this.clienteHandler = new AcessoMultiplo();
+    }*/
 
     public void start(int PORT){
         try {
@@ -37,8 +35,8 @@ public class EmpresaMobilidade extends Thread implements Serializable{
                 //System.out.println("Cliente conectado " + clienteSocket.getInetAddress());
                 // cria uma nova thread para lidar com o cliente 
                 // assim é possível lidar com vários clientes ao mesmo tempo
-                AcessoMultiplo clienteHandler = new AcessoMultiplo();
-                clienteHandler.setClientSocket(clienteSocket);
+                AcessoMultiplo clienteHandler = new AcessoMultiplo(clienteSocket);
+                //clienteHandler.setClientSocket(clienteSocket);
                 clienteHandler.start();
                 pagar("empresa", "22", clienteHandler.getValor(), "DRIVER1", servidorRemotoSocket);
             }
@@ -63,7 +61,7 @@ public class EmpresaMobilidade extends Thread implements Serializable{
             // Envie a mensagem criptografada ao servidor
             _out.write(encryptedMessage);
             _out.flush();
-
+            /* 
             // Receba a resposta criptografada do servidor
             byte[] encryptedResponse = new byte[1024];
             int length = _in.read(encryptedResponse);
@@ -74,7 +72,7 @@ public class EmpresaMobilidade extends Thread implements Serializable{
             byte[] decryptedResponseBytes = Crypto.decrypt(encryptedResponseBytes, geraChave(), geraIv());
             // Converte a resposta descriptografada para String
             String resposta = new String(decryptedResponseBytes);
-            System.out.println(resposta);
+            System.out.println(resposta);*/
 
         } catch (Exception e) {
             e.printStackTrace();

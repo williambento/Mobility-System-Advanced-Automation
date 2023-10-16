@@ -34,7 +34,7 @@ public class AcessoMultiplo extends Thread implements Serializable{
     private Route rota;
     private boolean buscaUmaRota;
 
-    public AcessoMultiplo() {
+    public AcessoMultiplo(Socket _clienteSocket) {
         this.on =  true;
         this.verifica = true;
         this.buscaUmaRota = true;
@@ -44,6 +44,7 @@ public class AcessoMultiplo extends Thread implements Serializable{
         this.valorPago = 0.0;
         this.completas = 0;
         this.distanciaPercorrida = 0.0;
+        this.clienteSocket = _clienteSocket;
         addRoutes();
     }
 
@@ -61,8 +62,8 @@ public class AcessoMultiplo extends Thread implements Serializable{
                 request(input, output, objeto);
             }
 
-            // Fecha a conexão com o cliente após sair do loop
             clienteSocket.close();
+            // Fecha a conexão com o cliente após sair do loop
             
         } catch (IOException e) {
             e.printStackTrace();
@@ -106,13 +107,13 @@ public class AcessoMultiplo extends Thread implements Serializable{
             } else if ("dataCar".equals(resposta[0])){
                 Double numeroValueOf = Double.valueOf(resposta[3]);
                 geraPagamento(numeroValueOf); 
-                System.out.println(resposta[0]);
             } else if ("fim".equals(resposta[0])){
                 /*routesExecutada.add(rota);
                 routesEmExecucao.remove(rota);*/
                 //System.out.println("Rotas a serem executadas: " + getRotas());
                 //System.out.println("Rotas em execução: " + getRotasExecutando());
                 //System.out.println("Rotas já executadas: " + getRotasExecutadas());
+                System.out.println("Dados Recebidos!");
                 verifica =  false;
             }
 
@@ -176,8 +177,8 @@ public class AcessoMultiplo extends Thread implements Serializable{
             routes.remove(rotaEncontrada); // Remova a rota encontrada de routes
             this.setItinerary(rotaExecutavel);
             rota = rotaEncontrada;
-            System.out.println(rota);
-            System.out.println(routesEmExecucao);
+            /*System.out.println(rota);
+            System.out.println(routesEmExecucao);*/
             return rotaEncontrada.getEdges();
         }
         return null; // Retorna null se a rota não for encontrada

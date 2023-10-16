@@ -3,6 +3,7 @@ package app.motoristas;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -26,6 +27,7 @@ public class ConectServer extends Thread{
     private String senha;
     private int opcao;
     private ArrayList<Motorista> listaMotoristas;
+    private ArrayList<Cars> cars;
     private Cars carro;
     private AcessoMultiplo company;
     private SumoTraciConnection sumo;
@@ -33,19 +35,23 @@ public class ConectServer extends Thread{
     private String dadosJson;
     private String ultimaEdge;
     private boolean statusRota;
+    private boolean abastecer;
 
     public ConectServer(String host, int port, String _id, String _senha, int _opcao) {
         listaMotoristas = new ArrayList<Motorista>();
+        cars = new ArrayList<Cars>();
         this.host = host;
         this.port = port;
         this.id = _id;
         this.senha = _senha;
         this.opcao = _opcao;
         this.statusRota = true;
+        this.abastecer = false;
+        cadastraCarros();
         gerarMotoristas();
     }
 
-    public void simula(AcessoMultiplo _company, DataOutputStream _out, Socket _socket){
+    public void simula(AcessoMultiplo _company, DataOutputStream _out, DataInputStream _in, Socket _socket){
         /* SUMO */
         String sumo_bin = "sumo";		
         String config_file = "map/map.sumo.cfg";
@@ -57,22 +63,39 @@ public class ConectServer extends Thread{
 
         try {
 			sumo.runServer(8000);
+            motorista.setCar(buscarCarroPorId("CAR1"));
+            /*this.carro = motorista.getCar();
+            System.out.println(carro);*/
             this.carro = criaCarro();
             String jsonAnterior = null;
-
 			if (_company.isOn()) {
 
-				TransportService tS1 = new TransportService(true, "CAR2", _company, carro, sumo);
+				TransportService tS1 = new TransportService(true, "Lavras", _company, getCar(), sumo);
 				tS1.start();
-                Thread.sleep(5000);
+                Thread.sleep(2000);
                 carro.start();
-		
+		        int i = 0;
                 while (_company.isOn()) {
 
                     carro.atualizaSensores();
                     dadosJson = carro.getJsonDados(); // Obtém os dados JSON
+
+                    System.out.println("Velocidado: " + carro.getSpeed());
+                    System.out.println(dadosJson);
                     dataServidor(dadosJson, _out);
-                    System.out.println("Dados JSON: " + dadosJson); // Faça o que quiser com os dados JSO
+                    //System.out.println("Dados JSON: " + dadosJson); // Faça o que quiser com os dados JSO
+                    System.out.println("Combustivel: " + carro.getFuelConsumption());
+                    if(carro.getFuelConsumption() < 9.99 && i == 0){
+                        //_socket.close();
+                        System.out.println("passoooooooooooooouuuuuu");
+                        Socket motoristaSocketPosto = new Socket("127.0.0.1", 3000);
+                        DataInputStream inputPosto = new DataInputStream(motoristaSocketPosto.getInputStream());
+                        DataOutputStream outputPosto = new DataOutputStream(motoristaSocketPosto.getOutputStream());
+                        ObjectInputStream objetoPosto = new ObjectInputStream(motoristaSocketPosto.getInputStream());
+                        abastecer("abastecer", motorista, inputPosto, outputPosto, 10);
+                        i = 1;
+                        motoristaSocketPosto.close();
+                    }
             
                     String input = carro.getRouteID();
                     String result = input.replaceAll("_[^\\s]*", "");
@@ -127,7 +150,7 @@ public class ConectServer extends Thread{
                         //Thread.sleep(100);
                         //this.start();
                         gerenciador = false;
-                        motoristaSocket.close();
+                        //motoristaSocket.close();
                         Socket motoristaSocketBanco = new Socket("127.0.0.1", 2000);
                     } else {
                         System.out.println("Você solicitou uma rota recentimente aguarde!");
@@ -136,14 +159,15 @@ public class ConectServer extends Thread{
                     }
                     break;
                 case 2:
-                    motorista = this.getMotoristaPorID(id);
-                    abastecer("abastecer", motorista, input, output);
+                    /*motorista = this.getMotoristaPorID(id);
+                    abastecer("abastecer", motorista, input, output, 10);*/
                     break;
                 case 3:
                     break;
                 default:
                     System.out.println("Opção inválida. Tente novamente.");
             }
+
             motoristaSocket.close();
         } catch (ConnectException e){
             e.printStackTrace();
@@ -187,7 +211,7 @@ public class ConectServer extends Thread{
     }
 
     // request para abastecer o carro
-    public void abastecer(String _request, Motorista _motorista, DataInputStream _in, DataOutputStream _out){
+    public void abastecer(String _request, Motorista _motorista, DataInputStream _in, DataOutputStream _out, int _litros){
         try{
             String requestCriaConta = JsonSchema.abastecer(_request, motorista.getIdMotorista(), motorista.getSenhaMotorista());
             // Criptografe a mensagem usando a classe Crypto
@@ -213,6 +237,7 @@ public class ConectServer extends Thread{
             e.printStackTrace();
         }
     }
+
 
     // request para abastecer o carro
     public void solicitarRota(String _request, Motorista _motorista, DataInputStream _in, DataOutputStream _out, ObjectInputStream _objeto, Socket _socket){
@@ -242,7 +267,7 @@ public class ConectServer extends Thread{
             System.out.println("Rota recebida, INICIANDO VIAGEM!");
             System.out.println("------------------------------");
             //this.setCompany(receivedTestServer);
-            simula(receivedTestServer, _out, _socket);
+            simula(receivedTestServer, _out, _in, _socket);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -284,9 +309,16 @@ public class ConectServer extends Thread{
 
     // busca motorista por id
     public Motorista getMotoristaPorID(String id) {
+        int i = 0;
         for (Motorista motorista : listaMotoristas) {
             if (motorista.getIdMotorista().equals(id)) {
+                Cars car = buscarCarroPorId("CAR" + (i + 1));
+                motorista.setCar(car);
+                setCar(car);
+                i++;
                 return motorista; // Retorna o motorista com o ID correspondente
+            } else {
+                System.out.println("Motorista não cadastrado!");
             }
         }
         return null; // Retorna null se nenhum motorista for encontrado com o ID especificado
@@ -316,7 +348,7 @@ public class ConectServer extends Thread{
     }
 
     public void setCar(Cars _car){
-        this.carro = _car;
+        carro = _car;
     }
 
     public Cars getCar(){
@@ -328,6 +360,70 @@ public class ConectServer extends Thread{
         String[] partes = _rota.split(" "); // Divide a string em partes usando o espaço como delimitador
         int tamanho = partes.length;
         ultimaEdge = partes[tamanho - 1]; // Pega o último item da lista
+    }
+
+    // cria 100 carros
+    public void cadastraCarros(){
+        try {
+            //fuelType: 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
+            for (int i = 0; i < 100; i++){
+                String idCar = "CAR" + (i+1);
+                if (i < 25){
+                    int fuelType = 2;
+                    int fuelPreferential = 2;
+                    double fuelPrice = 3.40;
+                    int personCapacity = 4;
+                    int personNumber = 1;
+                    SumoColor green = new SumoColor(0, 255, 0, 126);
+                    Cars a1 = new Cars(true, idCar, green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+                    setCars(a1);
+                } else if (i >= 25 && i < 50){
+                    int fuelType = 1;
+                    int fuelPreferential = 1;
+                    double fuelPrice = 2.50;
+                    int personCapacity = 2;
+                    int personNumber = 1;
+                    SumoColor blue = new SumoColor(255, 0, 0, 126);
+                    Cars a1 = new Cars(true, idCar, blue,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+                    setCars(a1);
+                } else if (i >= 50 && i < 75){
+                    int fuelType = 3;
+                    int fuelPreferential = 3;
+                    double fuelPrice = 3.10;
+                    int personCapacity = 2;
+                    int personNumber = 1;
+                    SumoColor yellow = new SumoColor(255, 0, 255, 126);
+                    Cars a1 = new Cars(true, idCar, yellow,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+                    setCars(a1);
+                } else {
+                    int fuelType = 4;
+                    int fuelPreferential = 2;
+                    double fuelPrice = 3.40;
+                    int personCapacity = 2;
+                    int personNumber = 1;
+                    SumoColor red = new SumoColor(255, 255, 0, 126);
+                    Cars a1 = new Cars(true, idCar, red,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+                    setCars(a1);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    // Método para buscar um carro por ID
+    public Cars buscarCarroPorId(String id) {
+        for (Cars carro : cars) {
+            if (carro.getIdAuto().equals(id)) {
+                //setCar(carro);
+                return carro; // Retorna o carro se o ID corresponder
+            }
+        }
+        return null; // Retorna null se nenhum carro correspondente foi encontrado com o ID especificado
+    }
+
+    public void setCars(Cars _car){
+        cars.add(_car);
     }
 
     // requisição para criar conta
