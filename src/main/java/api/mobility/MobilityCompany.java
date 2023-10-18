@@ -91,7 +91,7 @@ public class MobilityCompany extends Thread implements Serializable{
             String mensagemDescString = new String(mensagemDescriptografadaBytes);
             // torna os dados acessiveis
             String[] resposta = JsonSchema.convertJsonString(mensagemDescString);
-            System.out.println(resposta[0]);
+            //System.out.println(resposta[0]);
     
             // caso a requisição seja do tipo criar conta a conta é criada e um retorno de OK é dado ao cliente
             if ("rota".equals(resposta[0])){
@@ -103,9 +103,8 @@ public class MobilityCompany extends Thread implements Serializable{
                 // envia a mensagem criptografada ao servidor
                 _out.write(envio);
                 _out.flush();
-                System.out.println("MobilityCompany: rota enviada ao Driver!");
-                //_objeto.writeObject(this.getItinerary());
-                System.out.println(this.getItinerary()[0]);
+                System.out.println("MobilityCompany: rota enviada ao driver: " + resposta[1]);
+       
                 setIDItinerary(this.getItinerary()[0]);
                 objeto.writeObject(this);
                 objeto.flush();
@@ -113,9 +112,11 @@ public class MobilityCompany extends Thread implements Serializable{
             } else if("fim".equals(resposta[0])){
                 rotasExecutadas.add(rota);
                 rotasEmExecucao.remove(rota);
-                System.out.println(rotasExecutadas);
+                //System.out.println(rotasExecutadas);
                 System.out.println("Dados Recebidos!");
                 verifica =  false;
+            } else if ("carDados".equals(resposta[0])){
+                System.out.println("MobilityCompany: carro " + resposta[1] + " esperando driver para iniciar rota!");
             }
 
         } catch (IOException e) {
@@ -149,7 +150,7 @@ public class MobilityCompany extends Thread implements Serializable{
                     
             // converte a mensagem descriptografada para string
             String mensagemDescString = new String(mensagemDescriptografadaBytes);
-            System.out.println(mensagemDescString);
+            //System.out.println(mensagemDescString);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -242,7 +243,7 @@ public class MobilityCompany extends Thread implements Serializable{
             rotaExecutavel[1] = rotaEncontrada.getEdges();
             rotasEmExecucao.add(rotaEncontrada); // adiciona a rota encontrada em routesEmExecucao
             rotasNaoExecutadas.remove(rotaEncontrada); // remove a rota encontrada de rotasNaoExecutadas
-            System.out.println(rotasEmExecucao);
+            //System.out.println(rotasEmExecucao);
             this.setItinerary(rotaExecutavel);
             rota = rotaEncontrada;
             return rotaEncontrada.getEdges();

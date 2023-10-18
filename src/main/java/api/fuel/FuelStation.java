@@ -4,7 +4,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
 
@@ -16,7 +15,7 @@ public class FuelStation extends Thread implements Serializable {
     public void run(){
         Socket postoSocket;
         try {
-            postoSocket = new Socket("127.0.0.1", 2000);
+            postoSocket = new Socket("127.0.0.1", 3000);
             criarConta(postoSocket);
             while (true) {
 
@@ -33,7 +32,7 @@ public class FuelStation extends Thread implements Serializable {
             DataOutputStream output = new DataOutputStream(_socket.getOutputStream());
             DataInputStream input = new DataInputStream(_socket.getInputStream());
 
-            String requestCriaConta = JsonSchema.criarConta("criarConta", "mobility_company", "company2023", 10000.0);
+            String requestCriaConta = JsonSchema.criarConta("criarConta", "fuel_station", "fuel2023", 10000.0);
             // criptografa a mensagem
             byte[] mensagemCrypto = Crypto.encrypt(requestCriaConta.getBytes(), geraChave(), geraIv());
             // envia a mensagem criptografada ao servidor

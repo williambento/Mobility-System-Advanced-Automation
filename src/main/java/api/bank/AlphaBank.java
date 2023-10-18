@@ -31,7 +31,7 @@ public class AlphaBank extends Thread implements Serializable{
             while (true) {
                 // aguarda e aceita conexões de clientes
                 Socket clienteSocket = socket.accept();
-                System.out.println("Cliente conectado ao AlphaBank!");
+                System.out.println("AlphaBank: cliente conectado");
                 request(clienteSocket);
                 clienteSocket.close();
             }
@@ -67,7 +67,7 @@ public class AlphaBank extends Thread implements Serializable{
                 // converte a string de retorno em double
                 double deposito = Double.parseDouble(resposta[3]);
                 criarContaCorrente(resposta[1], resposta[2], deposito);
-                String msgVerifica = "Conta " + resposta[1] + " criada!";
+                String msgVerifica = "AlphaBank: conta " + resposta[1] + " criada!";
                 // criptografa a mensagem
                 byte[] mensagemCrypto = Crypto.encrypt(msgVerifica.getBytes(), geraChave(), geraIv());
                 // envia a mensagem criptografada ao servidor falando qua a conta foi criada

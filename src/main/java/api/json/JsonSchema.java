@@ -2,6 +2,8 @@ package api.json;
 
 import org.json.JSONObject;
 
+import api.car.Cars;
+
 public class JsonSchema {
     // padrao de requisição para criar conta
     public static String criarConta(String _request, String _login, String _senha, double _deposito) {
@@ -52,9 +54,22 @@ public class JsonSchema {
         } else if (requisicao.equals("fim")){
             String[] resultado = new String[]{requisicao};
             return resultado;
+        } else if (requisicao.equals("carDados")){
+            String idCar = jsonObject.getString("idCar");
+            String classCar = jsonObject.getString("classeCar");
+            String[] resultado = new String[]{requisicao, idCar, classCar};
+            return resultado;
         }
 
         String[] resultado = new String[]{requisicao};
         return resultado;
+    }
+
+    public static String dadosCar(String _request, String _idCar, Class<? extends Cars> _class1) {
+        JSONObject json = new JSONObject();
+        json.put("request", _request);
+        json.put("idCar", _idCar);
+        json.put("classeCar", _class1);
+        return json.toString();
     }
 }

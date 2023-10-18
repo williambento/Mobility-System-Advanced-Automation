@@ -11,6 +11,7 @@ import java.util.Arrays;
 
 import api.mobility.MobilityCompany;
 import api.car.Cars;
+import api.car.Auto;
 import api.crypto.Crypto;
 import api.json.JsonSchema;
 import api.mobility.TransportService;
@@ -23,7 +24,8 @@ public class Driver extends Thread implements Serializable {
     private String senha;
     private String ultimaEdge;
     private SumoTraciConnection sumo;
-    private Cars carro;
+    private Auto carro;
+    private Cars car;
     private String dadosJson;
 
     public Driver(String _id, String _senha){
@@ -80,7 +82,7 @@ public class Driver extends Thread implements Serializable {
                     
             // converte a mensagem descriptografada para string
             String mensagemDescString = new String(mensagemDescriptografadaBytes);
-            System.out.println(mensagemDescString);
+            //System.out.println(mensagemDescString);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -112,7 +114,7 @@ public class Driver extends Thread implements Serializable {
 
             // recebe um objeto to tipo String[] com os dados de execução da rota
             MobilityCompany receivedTestServer =  (MobilityCompany) _objeto.readObject();
-            System.out.println("Driver: rota recebida, INICIANDO VIAGEM!");
+            System.out.println(getIdMotorista() + ": rota recebida, INICIANDO VIAGEM!");
             System.out.println("------------------------------");
             
             simula(receivedTestServer, _out, _in, _socket);
@@ -177,12 +179,14 @@ public class Driver extends Thread implements Serializable {
 				tS1.start();
                 Thread.sleep(2000);
                 carro.start();
-		        int i = 0;
+		        //int i = 0;
                 while (_company.isOn()) {
                     carro.atualizaSensores();
                     dadosJson = carro.getJsonDados(); // Obtém os dados JSON
-                    //System.out.println("Driver: " + dadosJson);
+                    //System.out.println(dadosJson);
+                    System.out.println("Driver: " + dadosJson);
                     String input = carro.getRouteID();
+                    //System.out.println(input);
                     String result = input.replaceAll("_[^\\s]*", "");
  
                     // Comparar o JSON atual com o JSON anterior
@@ -193,7 +197,7 @@ public class Driver extends Thread implements Serializable {
                         sumo.close();
                         System.out.print("");
                         System.out.println("------------------------------");
-                        System.out.println("VIAGEM FINALIZADA, DADOS GERADOS!");
+                        System.out.println(getIdMotorista() + "VIAGEM FINALIZADA, DADOS GERADOS!");
                         System.out.println("------------------------------");
                         break;
                     }
@@ -208,7 +212,7 @@ public class Driver extends Thread implements Serializable {
                 }
                 Thread.sleep(100); // Pausa por 1 segundo antes de sair do loop
 			} else {
-                System.out.println("VIAGEM FINALIZADA, DADOS GERADOS!");
+                System.out.println(getIdMotorista() + "VIAGEM FINALIZADA, DADOS GERADOS!");
                 System.out.println("------------------------------");
             }
 		} catch (InterruptedException e) {
@@ -219,7 +223,7 @@ public class Driver extends Thread implements Serializable {
     }
 
     // Cria carro temporario
-    public Cars criaCarro(){
+    public Auto criaCarro(){
 		try {
             // fuelType: 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
             int fuelType = 2;
@@ -228,7 +232,7 @@ public class Driver extends Thread implements Serializable {
             int personCapacity = 1;
             int personNumber = 1;
             SumoColor green = new SumoColor(0, 255, 0, 126);
-            Cars a1 = new Cars(true, "CAR2", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+            Auto a1 = new Auto(true, "CAR2", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
             setCar(a1);
             return a1;
         } catch (Exception e) {
@@ -238,7 +242,7 @@ public class Driver extends Thread implements Serializable {
     }
 
     // seta o carro
-    public void setCar(Cars _car){
+    public void setCar(Auto _car){
         carro = _car;
     }
 
@@ -251,10 +255,11 @@ public class Driver extends Thread implements Serializable {
             // Envie a mensagem criptografada ao servidor
             _out.write(encryptedMessage);
             _out.flush();
-            System.out.println("msg de fim enviada");
+            //System.out.println("msg de fim enviada");
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
 }
