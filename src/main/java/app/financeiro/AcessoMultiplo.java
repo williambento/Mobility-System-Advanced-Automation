@@ -21,7 +21,7 @@ public class AcessoMultiplo extends Thread {
     }
 
     @Override
-    public void run() {
+    public void start() {
         try {
             // entrada e saida de dados para o cliente empresa
             DataInputStream inputEmpresa = new DataInputStream(clienteEmpresaSocket.getInputStream());

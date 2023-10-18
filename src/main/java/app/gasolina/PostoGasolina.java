@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class PostoGasolina extends Thread implements Serializable{
+public class PostoGasolina implements Serializable{
     private String nome;
     private double valorGasolina;
     private ServerSocket postoSocket;
