@@ -1,14 +1,12 @@
-//package io.sim;
+package io.sim;
 
-/**
- * Hello world!
- *
- */
-/*public class App {
-    public static void main( String[] args ) {
+import io.sim.system.Sumo;
 
-        EnvSimulator ev = new EnvSimulator();
-        ev.start();        
+public class App {
+    public static void main( String[] args ) throws InterruptedException {
+
+        Sumo ev = new Sumo();
+        ev.start();
 
     }
-}*/
+}

@@ -1,4 +1,4 @@
-package api.bank;
+package io.sim.bank;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
-import api.crypto.Crypto;
-import api.json.JsonSchema;
+import io.sim.crypto.Crypto;
+import io.sim.json.JsonSchema;
 
 public class AlphaBank extends Thread implements Serializable{
     private ServerSocket socket;
@@ -26,7 +26,7 @@ public class AlphaBank extends Thread implements Serializable{
     public void run(){
         try {
             socket = new ServerSocket(PORT);
-            System.out.println("AlphaBank online...");
+            System.out.println("AlphaBank: servidor online...");
 
             while (true) {
                 // aguarda e aceita conexões de clientes

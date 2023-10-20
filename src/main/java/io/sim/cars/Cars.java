@@ -1,19 +1,30 @@
-package api.car;
+package io.sim.cars;
 
 import de.tudresden.sumo.cmd.Vehicle;
-import java.util.ArrayList;
 
-import it.polito.appeal.traci.SumoTraciConnection;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import app.json.JsonSchema;
+import it.polito.appeal.traci.SumoTraciConnection;
 import de.tudresden.sumo.objects.SumoColor;
 import de.tudresden.sumo.objects.SumoPosition2D;
+import io.sim.crypto.Crypto;
+import io.sim.drivers.DrivingData;
 
-public class Auto extends Thread {
+public class Cars extends Thread {
 
 	private String idAuto;
 	private SumoColor colorAuto;
 	private String driverID;
 	private SumoTraciConnection sumo;
+	private String dataCar;
+	private double distanciaPercorrida;
 
 	private boolean on_off;
 	private long acquisitionRate;
@@ -22,16 +33,11 @@ public class Auto extends Thread {
 	private double fuelPrice; 		// price in liters
 	private int personCapacity;		// the total number of persons that can ride in this vehicle
 	private int personNumber;		// the total number of persons which are riding in this vehicle
+	private double emissaoCO2;
 
-	private ArrayList<DataCars> drivingRepport;
-	private double totalDistance;
-	private double fuelTank;
-	private String dadosJson; // Campo para armazenar os dados JSON
-
-	private double speed;
-	private String routeID;
+	private ArrayList<DrivingData> drivingRepport;
 	
-	public Auto(boolean _on_off, String _idAuto, SumoColor _colorAuto, String _driverID, SumoTraciConnection _sumo, long _acquisitionRate,
+	public Cars(boolean _on_off, String _idAuto, SumoColor _colorAuto, String _driverID, SumoTraciConnection _sumo, long _acquisitionRate,
 			int _fuelType, int _fuelPreferential, double _fuelPrice, int _personCapacity, int _personNumber) throws Exception {
 
 		this.on_off = _on_off;
@@ -40,7 +46,6 @@ public class Auto extends Thread {
 		this.driverID = _driverID;
 		this.sumo = _sumo;
 		this.acquisitionRate = _acquisitionRate;
-		this.fuelTank = 10.0; //inicialmente o carro começa com tanque cheio
 		
 		if((_fuelType < 0) || (_fuelType > 4)) {
 			this.fuelType = 4;
@@ -57,32 +62,26 @@ public class Auto extends Thread {
 		this.fuelPrice = _fuelPrice;
 		this.personCapacity = _personCapacity;
 		this.personNumber = _personNumber;
-		this.drivingRepport = new ArrayList<DataCars>();
-		this.totalDistance = 0.0;
-	}
-
-	// só para fins de teste depois deve ser removido !!!!!!!!!!!!!!!!!!!!!
-	public Auto(boolean b, String string, String string2, int i) {
+		this.drivingRepport = new ArrayList<DrivingData>();
 	}
 
 	@Override
 	public void run() {
-		
-		while (this.on_off) {
-			try {
-				/*Cars.sleep(this.acquisitionRate);
-				this.atualizaSensores();*/
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-
-	}
-
-	public void atualizaSensores() {
+		Socket carSocket;
 		try {
-			SumoTraciConnection sumo = this.getSumo();
-			if (sumo != null && !sumo.isClosed()) {
+			carSocket = new Socket("127.0.0.1", 2000);
+			DataInputStream input = new DataInputStream(carSocket.getInputStream());
+			DataOutputStream output = new DataOutputStream(carSocket.getOutputStream());
+			ObjectInputStream objeto = new ObjectInputStream(carSocket.getInputStream());
+			enviaDados("dataCar", input, output, objeto, carSocket);	
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	private void atualizaSensores() {
+
+		try {
+			if (!this.getSumo().isClosed()) {
 				SumoPosition2D sumoPosition2D;
 				sumoPosition2D = (SumoPosition2D) sumo.do_job_get(Vehicle.getPosition(this.idAuto));
 
@@ -91,7 +90,7 @@ public class Auto extends Thread {
 				//System.out.println("RouteID: " + (String) this.sumo.do_job_get(Vehicle.getRouteID(this.idAuto)));
 				//System.out.println("RouteIndex: " + this.sumo.do_job_get(Vehicle.getRouteIndex(this.idAuto)));
 				
-				DataCars _repport = new DataCars(
+				DrivingData _repport = new DrivingData(
 
 						this.idAuto, this.driverID, System.currentTimeMillis(), sumoPosition2D.x, sumoPosition2D.y,
 						(String) this.sumo.do_job_get(Vehicle.getRoadID(this.idAuto)),
@@ -100,7 +99,6 @@ public class Auto extends Thread {
 						(double) sumo.do_job_get(Vehicle.getDistance(this.idAuto)),
 
 						(double) sumo.do_job_get(Vehicle.getFuelConsumption(this.idAuto)),
-						
 						// Vehicle's fuel consumption in ml/s during this time step,
 						// to get the value for one step multiply with the step length; error value:
 						// -2^30
@@ -109,7 +107,7 @@ public class Auto extends Thread {
 
 						this.fuelType, this.fuelPrice,
 
-						(double) sumo.do_job_get(Vehicle.getCO2Emission(this.idAuto)),
+						this.emissaoCO2 = (double) sumo.do_job_get(Vehicle.getCO2Emission(this.idAuto)),
 						// Vehicle's CO2 emissions in mg/s during this time step,
 						// to get the value for one step multiply with the step length; error value:
 						// -2^30
@@ -179,32 +177,21 @@ public class Auto extends Thread {
 				
 				//System.out.println("getPersonNumber = " + sumo.do_job_get(Vehicle.getPersonNumber(this.idAuto)));
 				//System.out.println("getPersonIDList = " + sumo.do_job_get(Vehicle.getPersonIDList(this.idAuto)));
-				double previousDistance = this.totalDistance; // Armazene a distância anterior
+				double previousDistance = this.distanciaPercorrida; // Armazene a distância anterior
 				double currentDistance = (double) sumo.do_job_get(Vehicle.getDistance(this.idAuto)); // Obtenha a distância atual
 				double intervalDistance = currentDistance - previousDistance; // Calcule a diferença de distância no intervalo atual
-				this.totalDistance += intervalDistance; // Adicione a diferença à distância total
-				//System.out.println("Distancia Total Percorrida = " + totalDistance);
-				this.routeID = (String) this.sumo.do_job_get(Vehicle.getLaneID(this.idAuto));
-				this.speed = (double) sumo.do_job_get(Vehicle.getSpeed(this.idAuto));
-				// monitora o consumo de gasolina
-				double consumo = (double) sumo.do_job_get(Vehicle.getFuelConsumption(this.idAuto)); // obtem o consumo de combustivel
-				//System.out.println("Distancia: " + totalDistance);
-				controlaCombustiverl(consumo);	
-				//System.out.println(getFuelConsumption());			
+				this.distanciaPercorrida += intervalDistance; // Adicione a diferença à distância total
+				this.distanciaPercorrida += intervalDistance; // Adicione a diferença à distância total
+				//this.dataCar = JsonSchema.carDados("dataCar", this.idAuto, this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission(), this.distanciaPercorrida);
+				//System.out.println("Driver: " + dataCar);
+				//System.out.println("---------------------------");
 
-				// Chame o método para criar os dados JSON e salve no campo
-                this.dadosJson = JsonSchema.carDados("dataCar", this.idAuto, this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission(), this.totalDistance);
-				//System.out.println(dadosJson);
 			} else {
 				//System.out.println("SUMO is closed...");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	public Double getDistanciaPercorrida(){
-		return this.totalDistance;
 	}
 
 	public boolean isOn_off() {
@@ -243,10 +230,6 @@ public class Auto extends Thread {
 		}
 	}
 
-	public void setCombustivel(double _combustivel){
-		this.fuelTank = _combustivel;
-	}
-
 	public double getFuelPrice() {
 		return this.fuelPrice;
 	}
@@ -279,61 +262,65 @@ public class Auto extends Thread {
 		return this.personNumber;
 	}
 
-	// Método para obter o deslocamento total
-	public double getTotalDistance() {
-		return this.totalDistance;
+	public double getCO2Emission(){
+		return emissaoCO2;
 	}
 
-	// combustivel
-	public void controlaCombustiverl(double _consumo){
-		_consumo = miligramasParaLitros(_consumo);
-		//System.out.println("Combustível gasto no ultimo passo: " + _consumo);
-		this.fuelTank = this.fuelTank - _consumo;
-		setCombustivel(fuelTank);
-		//System.out.println("Tanque: " + fuelTank);
+	public void enviaDados(String _request, DataInputStream _in, DataOutputStream _out, ObjectInputStream _objeto, Socket _socket) {
+		try {
+			String ultimoDataCar = ""; // Variável para armazenar o JSON anterior
+	
+			while (true) {
+				atualizaSensores(); // Atualize os sensores para obter dados atualizados
+				String novoDataCar = JsonSchema.carDados(_request, getIdAuto(), getCO2Emission(), getDistance());
+	
+	
+				if (novoDataCar.equals(ultimoDataCar)) {
+					// metodo para sai do loop
+					System.out.println("Driver: rota finalizada, dados sincronizados com o servidor!");
+					break;
+				}
+		
+				// criptografa a mensagem usando a classe Crypto
+				//System.out.println(novoDataCar);
+				byte[] encryptedMessage = Crypto.encrypt(novoDataCar.getBytes(), geraChave(), geraIv());
+	
+				// envia a mensagem criptografada ao servidor
+				_out.write(encryptedMessage);
+				_out.flush();
+
+				ultimoDataCar = novoDataCar;
+				System.out.println(novoDataCar);
+	
+				Thread.sleep(acquisitionRate); // Aguarde o tempo de aquisição definido
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
-/* 
-	@Override
-	public String toString() {
-    	return "Carro: " + idAuto;
-	}*/
+	
+	
 
-	public String getJsonDados(){
-		return dadosJson;
-	}
-
-	public void setJsonDados(String json){
-		dadosJson = json;
-	}
-
-	public String getRouteID(){
-		return routeID;
-	}
-
-	public double getFuelConsumption(){
-		return this.fuelTank;
-	}
-
-	// converter mg em Litros
-	public static double miligramasParaLitros(double miligramas) {
-		double densidade = 770;
-        if (densidade <= 0) {
-            throw new IllegalArgumentException("A densidade deve ser um valor positivo.");
-        }
-
-        // Fórmula para conversão de miligramas para litros: litros = miligramas / (1000 * densidade)
-        double litros = miligramas / (1000 * densidade);
-        return litros;
+	// gera chave para a criptografia
+    public byte[] geraChave(){
+        // Crie uma chave de 128 bits (16 bytes)
+        byte[] chave = new byte[16];
+        // Preencha a chave com zeros neste exemplo
+        Arrays.fill(chave, (byte) 0);
+        return chave;
     }
 
-	//retorna a velocidade do carro
-	public double getSpeed(){
-		return speed;
-	}
+    // gera iv para a criptografia
+    public byte[] geraIv(){
+        // Crie um IV de 16 bytes (inicialização aleatória)
+        byte[] iv = new byte[16];
+        // Preencha o IV com zeros neste exemplo
+        Arrays.fill(iv, (byte) 0);
+        return iv;
+    }
 
-	// get fuelTank
-	public double getFuelTank(){
-		return fuelTank;
+	public double getDistance(){
+		return distanciaPercorrida;
 	}
-
 }

@@ -7,11 +7,11 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import api.mobility.MobilityCompany;
 import api.car.Cars;
-import api.car.Auto;
 import api.crypto.Crypto;
 import api.json.JsonSchema;
 import api.mobility.TransportService;
@@ -23,14 +23,18 @@ public class Driver extends Thread implements Serializable {
     private String id;
     private String senha;
     private String ultimaEdge;
-    private SumoTraciConnection sumo;
-    private Auto carro;
-    private Cars car;
+    private Cars carro;
     private String dadosJson;
+    private SumoTraciConnection sumo;
+    private String idCar;
+    private int rangeRota;
 
-    public Driver(String _id, String _senha){
+    public Driver(String _id, String _senha, String _idCar, int _rangeRoutes){
         this.id = _id;
         this.senha = _senha;
+        this.idCar = _idCar;
+        this.rangeRota = _rangeRoutes;
+        //this.carro = criaCarro();
     }
 
     public void run(){
@@ -92,7 +96,7 @@ public class Driver extends Thread implements Serializable {
     public void solicitarRota(String _request, DataInputStream _in, DataOutputStream _out, ObjectInputStream _objeto, Socket _socket){
         try{
 
-            String requestRota = JsonSchema.solicitarRota(_request, this.getIdMotorista(), this.getSenhaMotorista());
+            String requestRota = JsonSchema.solicitarRota(_request, this.getIdMotorista(), this.getSenhaMotorista(), this.rangeRota);
             // criptografa a mensagem usando a classe Crypto
             byte[] encryptedMessage = Crypto.encrypt(requestRota.getBytes(), geraChave(), geraIv());
             
@@ -114,11 +118,11 @@ public class Driver extends Thread implements Serializable {
 
             // recebe um objeto to tipo String[] com os dados de execução da rota
             MobilityCompany receivedTestServer =  (MobilityCompany) _objeto.readObject();
-            System.out.println(getIdMotorista() + ": rota recebida, INICIANDO VIAGEM!");
+            System.out.println("Driver " + getIdMotorista() + ": rota recebida, INICIANDO VIAGEM!");
             System.out.println("------------------------------");
-            
-            simula(receivedTestServer, _out, _in, _socket);
-
+            for(int i = 0; i < 9; i++){
+                simula(receivedTestServer, _out, _in, _socket);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -162,33 +166,37 @@ public class Driver extends Thread implements Serializable {
     // roda simulação sumo
     public void simula(MobilityCompany _company, DataOutputStream _out, DataInputStream _in, Socket _socket){
         /* SUMO */
+
+      
         String sumo_bin = "sumo";		
         String config_file = "map/map.sumo.cfg";
-
         // Sumo connection
+        
         this.sumo = new SumoTraciConnection(sumo_bin, config_file);
+
         sumo.addOption("start", "1"); // auto-run on GUI show
         sumo.addOption("quit-on-end", "1"); // auto-close on end
 
+        this.carro = criaCarro();
         try {
 			sumo.runServer(8000);
-            this.carro = criaCarro();
             String jsonAnterior = null;
 			if (_company.isOn()) {
 				TransportService tS1 = new TransportService(true, "Lavras", _company, carro, sumo);
 				tS1.start();
-                Thread.sleep(2000);
-                carro.start();
+                Thread.sleep(4000);
+                //carro.start();
 		        //int i = 0;
                 while (_company.isOn()) {
                     carro.atualizaSensores();
                     dadosJson = carro.getJsonDados(); // Obtém os dados JSON
-                    //System.out.println(dadosJson);
-                    System.out.println("Driver: " + dadosJson);
+                    /*System.out.println("Combustivel: " + carro.getFuelConsumption());
+                    System.out.println(dadosJson);*/
+                    //System.out.println("Driver: " + dadosJson);
                     String input = carro.getRouteID();
                     //System.out.println(input);
                     String result = input.replaceAll("_[^\\s]*", "");
- 
+                    //System.out.println(result);
                     // Comparar o JSON atual com o JSON anterior
                     if (result.equals(ultimaEdge)) {
                         //_socket.close();
@@ -197,7 +205,7 @@ public class Driver extends Thread implements Serializable {
                         sumo.close();
                         System.out.print("");
                         System.out.println("------------------------------");
-                        System.out.println(getIdMotorista() + "VIAGEM FINALIZADA, DADOS GERADOS!");
+                        System.out.println("Driver " + getIdMotorista() + " VIAGEM FINALIZADA, DADOS GERADOS!");
                         System.out.println("------------------------------");
                         break;
                     }
@@ -208,11 +216,11 @@ public class Driver extends Thread implements Serializable {
                     }
                     // atualiza o JSON anterior com o JSON atual
                     jsonAnterior = dadosJson;
-                    Thread.sleep(1000);
+                    Thread.sleep(500);
                 }
-                Thread.sleep(100); // Pausa por 1 segundo antes de sair do loop
+                Thread.sleep(1000); // Pausa por 1 segundo antes de sair do loop
 			} else {
-                System.out.println(getIdMotorista() + "VIAGEM FINALIZADA, DADOS GERADOS!");
+                System.out.println("Driver " + getIdMotorista() + " VIAGEM FINALIZADA, DADOS GERADOS!");
                 System.out.println("------------------------------");
             }
 		} catch (InterruptedException e) {
@@ -222,27 +230,8 @@ public class Driver extends Thread implements Serializable {
 		}
     }
 
-    // Cria carro temporario
-    public Auto criaCarro(){
-		try {
-            // fuelType: 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
-            int fuelType = 2;
-            int fuelPreferential = 2;
-            double fuelPrice = 3.40;
-            int personCapacity = 1;
-            int personNumber = 1;
-            SumoColor green = new SumoColor(0, 255, 0, 126);
-            Auto a1 = new Auto(true, "CAR2", green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
-            setCar(a1);
-            return a1;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     // seta o carro
-    public void setCar(Auto _car){
+    public void setCar(Cars _car){
         carro = _car;
     }
 
@@ -262,4 +251,33 @@ public class Driver extends Thread implements Serializable {
         }
     }
 
+    // Método para buscar um carro por ID
+    public Cars buscarCarroPorId(String id, ArrayList<Cars> cars) {
+        for (Cars carro : cars) {
+            if (carro.getIdAuto().equals(id)) {
+                //setCar(carro);
+                return carro; // Retorna o carro se o ID corresponder
+            }
+        }
+        return null; // Retorna null se nenhum carro correspondente foi encontrado com o ID especificado
+    }
+
+    // cria carro
+    public Cars criaCarro(){
+		try {
+            // fuelType: 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
+            int fuelType = 2;
+            int fuelPreferential = 2;
+            double fuelPrice = 3.40;
+            int personCapacity = 1;
+            int personNumber = 1;
+            SumoColor green = new SumoColor(0, 255, 0, 126);
+            Cars a1 = new Cars(true, this.idCar, green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+            setCar(a1);
+            return a1;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

@@ -1,14 +1,14 @@
-package io.sim;
+package api.test;
 
 import de.tudresden.sumo.cmd.Vehicle;
+
 import java.util.ArrayList;
 
 import it.polito.appeal.traci.SumoTraciConnection;
 import de.tudresden.sumo.objects.SumoColor;
 import de.tudresden.sumo.objects.SumoPosition2D;
 
-// essa classe criar veiculos
-public class Auto extends Thread {
+public class Cars extends Thread {
 
 	private String idAuto;
 	private SumoColor colorAuto;
@@ -23,10 +23,15 @@ public class Auto extends Thread {
 	private int personCapacity;		// the total number of persons that can ride in this vehicle
 	private int personNumber;		// the total number of persons which are riding in this vehicle
 
-	private ArrayList<DrivingData> drivingRepport;
+	private ArrayList<DataCars> drivingRepport;
+	private double totalDistance;
+	private double fuelTank;
+	private String data;
+
+	private double speed;
+	private String routeID;
 	
-	// construtor, vários parametros devem ser passados
-	public Auto(boolean _on_off, String _idAuto, SumoColor _colorAuto, String _driverID, SumoTraciConnection _sumo, long _acquisitionRate,
+	public Cars(boolean _on_off, String _idAuto, SumoColor _colorAuto, String _driverID, SumoTraciConnection _sumo, long _acquisitionRate,
 			int _fuelType, int _fuelPreferential, double _fuelPrice, int _personCapacity, int _personNumber) throws Exception {
 
 		this.on_off = _on_off;
@@ -35,6 +40,7 @@ public class Auto extends Thread {
 		this.driverID = _driverID;
 		this.sumo = _sumo;
 		this.acquisitionRate = _acquisitionRate;
+		this.fuelTank = 10.0; //inicialmente o carro começa com tanque cheio
 		
 		if((_fuelType < 0) || (_fuelType > 4)) {
 			this.fuelType = 4;
@@ -51,19 +57,22 @@ public class Auto extends Thread {
 		this.fuelPrice = _fuelPrice;
 		this.personCapacity = _personCapacity;
 		this.personNumber = _personNumber;
-		this.drivingRepport = new ArrayList<DrivingData>();
+		this.drivingRepport = new ArrayList<DataCars>();
+		this.totalDistance = 0.0;
 	}
 
 	@Override
 	public void run() {
+		
 		while (this.on_off) {
 			try {
-				//Auto.sleep(this.acquisitionRate);
+				//Cars.sleep(this.acquisitionRate);
 				this.atualizaSensores();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
+
 	}
 
 	private void atualizaSensores() {
@@ -79,7 +88,7 @@ public class Auto extends Thread {
 				System.out.println("RouteID: " + (String) this.sumo.do_job_get(Vehicle.getRouteID(this.idAuto)));
 				System.out.println("RouteIndex: " + this.sumo.do_job_get(Vehicle.getRouteIndex(this.idAuto)));
 				
-				DrivingData _repport = new DrivingData(
+				DataCars _repport = new DataCars(
 
 						this.idAuto, this.driverID, System.currentTimeMillis(), sumoPosition2D.x, sumoPosition2D.y,
 						(String) this.sumo.do_job_get(Vehicle.getRoadID(this.idAuto)),
@@ -172,9 +181,16 @@ public class Auto extends Thread {
 			} else {
 				System.out.println("SUMO is closed...");
 			}
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	//this.data = JsonSchema.carDados("dataCar", this.idAuto, this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission(), this.totalDistance);
+
+	public Double getDistanciaPercorrida(){
+		return this.totalDistance;
 	}
 
 	public boolean isOn_off() {
@@ -213,6 +229,10 @@ public class Auto extends Thread {
 		}
 	}
 
+	public void setCombustivel(double _combustivel){
+		this.fuelTank = _combustivel;
+	}
+
 	public double getFuelPrice() {
 		return this.fuelPrice;
 	}
@@ -243,5 +263,52 @@ public class Auto extends Thread {
 
 	public int getPersonNumber() {
 		return this.personNumber;
+	}
+
+	// Método para obter o deslocamento total
+	public double getTotalDistance() {
+		return this.totalDistance;
+	}
+
+	// combustivel
+	public void controlaCombustiverl(double _consumo){
+		_consumo = miligramasParaLitros(_consumo);
+		//System.out.println("Combustível gasto no ultimo passo: " + _consumo);
+		this.fuelTank = this.fuelTank - _consumo;
+		setCombustivel(fuelTank);
+		//System.out.println("Tanque: " + fuelTank);
+	}
+
+	public String getJsonDados(){
+		return data;
+	}
+
+	public void setJsonDados(String json){
+		data = json;
+	}
+
+	public String getRouteID(){
+		return routeID;
+	}
+
+	public double getFuelConsumption(){
+		return this.fuelTank;
+	}
+
+	// converter mg em Litros
+	public static double miligramasParaLitros(double miligramas) {
+		double densidade = 770;
+        if (densidade <= 0) {
+            throw new IllegalArgumentException("A densidade deve ser um valor positivo.");
+        }
+
+        // Fórmula para conversão de miligramas para litros: litros = miligramas / (1000 * densidade)
+        double litros = miligramas / (1000 * densidade);
+        return litros;
+    }
+
+	//retorna a velocidade do carro
+	public double getSpeed(){
+		return speed;
 	}
 }

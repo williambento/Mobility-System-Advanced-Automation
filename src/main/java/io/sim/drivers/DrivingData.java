@@ -1,4 +1,4 @@
-package io.sim;
+package io.sim.drivers;
 
 public class DrivingData {
 

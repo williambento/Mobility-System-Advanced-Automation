@@ -1,4 +1,4 @@
-package api.mobility;
+package io.sim.company;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -21,10 +21,10 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import api.crypto.Crypto;
-import api.json.JsonSchema;
+import io.sim.crypto.Crypto;
+import io.sim.json.JsonSchema;
 
-public class MobilityCompany extends Thread implements Serializable{
+public class Company extends Thread implements Serializable{
     private transient ServerSocket socket;
     private int PORT;
 
@@ -38,7 +38,7 @@ public class MobilityCompany extends Thread implements Serializable{
     private boolean on;
     private boolean verifica;
 
-    public MobilityCompany(int PORT){
+    public Company(int PORT){
         this.PORT = PORT;
         this.rotasNaoExecutadas = new ArrayList<Route>();
         this.rotasEmExecucao = new ArrayList<Route>();
@@ -51,17 +51,16 @@ public class MobilityCompany extends Thread implements Serializable{
     public void run(){
         try {
             socket = new ServerSocket(PORT);
-            System.out.println("MobilityCompany online...");
-            String HOST = "127.0.0.1";
-            int PORT_BANCO = 3000;  // Substitua pela porta real do servidor remoto
-            Socket socket_banco = new Socket(HOST, PORT_BANCO);
+            System.out.println("Company: servidor online...");
+          
+            Socket socket_banco = new Socket("127.0.0.1", 3000);
             // inicia criando a conta no banco
             criarConta(socket_banco);
 
             while (verifica) {
                 // aguarda e aceita conexões de clientes
                 Socket clienteSocket = socket.accept();
-                System.out.println("Cliente conectado ao MobilityCompany!");
+                System.out.println("Company: cliente conectado!");
                 request(clienteSocket);
             }
 
@@ -95,29 +94,28 @@ public class MobilityCompany extends Thread implements Serializable{
     
             // caso a requisição seja do tipo criar conta a conta é criada e um retorno de OK é dado ao cliente
             if ("rota".equals(resposta[0])){
-                int rangeRota = Integer.parseInt(resposta[3]);
-                for(int i = 0; i < 9; i++){
-                    idItinerario = this.generateRandomID();
-                    String msg = this.buscaRotaID(idItinerario);
-                    byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());
-                                    
-                    // envia a mensagem criptografada ao servidor
-                    _out.write(envio);
-                    _out.flush();
-                    System.out.println("MobilityCompany: rota enviada ao driver: " + resposta[1]);
-        
-                    setIDItinerary(this.getItinerary()[0]);
-                    objeto.writeObject(this);
-                    objeto.flush();
-                }
+
+                idItinerario = this.generateRandomID();
+                String msg = this.buscaRotaID(idItinerario);
+                byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());
+                                
+                // envia a mensagem criptografada ao servidor
+                _out.write(envio);
+                _out.flush();
+                System.out.println("Company: rota enviada ao driver: " + resposta[1]);
+       
+                /*setIDItinerary(this.getItinerary()[0]);
+                objeto.writeObject(this);
+                objeto.flush();*/
+
             } else if("fim".equals(resposta[0])){
                 rotasExecutadas.add(rota);
                 rotasEmExecucao.remove(rota);
                 //System.out.println(rotasExecutadas);
                 System.out.println("Dados Recebidos!");
                 verifica =  false;
-            } else if ("carDados".equals(resposta[0])){
-                System.out.println("MobilityCompany: carro " + resposta[1] + " esperando driver para iniciar rota!");
+            } else if ("dataCar".equals(resposta[0])){
+                System.out.println("Company: " + resposta[1]);
             }
 
         } catch (IOException e) {
@@ -244,7 +242,7 @@ public class MobilityCompany extends Thread implements Serializable{
             rotaExecutavel[1] = rotaEncontrada.getEdges();
             rotasEmExecucao.add(rotaEncontrada); // adiciona a rota encontrada em routesEmExecucao
             rotasNaoExecutadas.remove(rotaEncontrada); // remove a rota encontrada de rotasNaoExecutadas
-            System.out.println(rotasEmExecucao);
+            //System.out.println(rotasEmExecucao);
             this.setItinerary(rotaExecutavel);
             rota = rotaEncontrada;
             return rotaEncontrada.getEdges();

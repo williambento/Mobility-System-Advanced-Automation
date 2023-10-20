@@ -1,6 +1,6 @@
 package api.mobility;
 
-import api.car.Auto;
+import api.car.Cars;
 import de.tudresden.sumo.cmd.Route;
 import de.tudresden.sumo.cmd.Vehicle;
 import de.tudresden.sumo.objects.SumoStringList;
@@ -11,11 +11,11 @@ public class TransportService extends Thread {
 	private String idTransportService;
 	private boolean on_off;
 	private SumoTraciConnection sumo;
-	private Auto auto;
+	private Cars auto;
 	private MobilityCompany itinerary;
 	
 
-	public TransportService(boolean _on_off, String _idTransportService, MobilityCompany company, Auto _auto,
+	public TransportService(boolean _on_off, String _idTransportService, MobilityCompany company, Cars _auto,
 			SumoTraciConnection routeEdges) {
 
 		this.on_off = _on_off;
@@ -31,7 +31,7 @@ public class TransportService extends Thread {
 
 			this.initializeRoutes();
 
-			//this.auto.start();
+			this.auto.start();
 
 			while (this.on_off) {
 				try {
@@ -108,7 +108,7 @@ public class TransportService extends Thread {
 		return this.sumo;
 	}
 
-	public Auto getAuto() {
+	public Cars getAuto() {
 		return this.auto;
 	}
 

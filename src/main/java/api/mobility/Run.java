@@ -5,25 +5,35 @@ import api.driver.Driver;
 import api.fuel.FuelStation;
 
 public class Run {
-    public static void main(String[] args) {
+    
+    public static void main(String[] args) throws Exception {
 
         int PORT = 2000;
         int PORT_BANCO = 3000;
-        MobilityCompany seven = new MobilityCompany(PORT);
-        Driver d1 = new Driver("bryan", "velozes");
-        Driver d2 = new Driver("rodolfo", "lux");
-        Driver d3 = new Driver("jhon", "limbo");
         AlphaBank bradesco = new AlphaBank(PORT_BANCO);
+        MobilityCompany seven = new MobilityCompany(PORT);
         FuelStation ipiranga = new FuelStation();
+
         try {
             bradesco.start();
             Thread.sleep(1000);
             seven.start();
             Thread.sleep(1000);
+            System.out.println("--------------------------------");
             ipiranga.start();
             Thread.sleep(1000);
-            d1.start();
-            d1.join();
+            int rangeRota = 0;
+            //for (int i = 0; i < 5; i++){
+                rangeRota = 9;
+                String id = "DRIVER" + (1);
+                String senha = id + "2023";
+                String idCar = "CAR" + (1);
+                Driver d1 = new Driver(id, senha, idCar, rangeRota);
+                d1.start();
+                d1.join();
+                Thread.sleep(100);
+               
+            //}
             /*d2.start();
             d2.join();
             d3.start();

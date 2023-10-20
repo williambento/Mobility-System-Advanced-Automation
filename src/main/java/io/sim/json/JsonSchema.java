@@ -1,4 +1,4 @@
-package api.json;
+package io.sim.json;
 
 import org.json.JSONObject;
 
@@ -16,12 +16,11 @@ public class JsonSchema {
     }
 
     // solicitar rota
-    public static String solicitarRota(String _request, String _id, String _senha, int _rangeRoutes) {
+    public static String solicitarRota(String _request, String _id, String _senha) {
         JSONObject json = new JSONObject();
         json.put("request", _request);
         json.put("motorista", _id);
         json.put("senha", _senha);
-        json.put("rangeRotas", _rangeRoutes);
         return json.toString();
     }
 
@@ -50,17 +49,18 @@ public class JsonSchema {
         } else if (requisicao.equals("rota")){
             String loginDriver = jsonObject.getString("motorista");
             String senhaDriver = jsonObject.getString("senha");
-            int rangeRota = jsonObject.getInt("rangeRotas");
-            String rangeRotaStr = Integer.toString(rangeRota);
-            String[] resultado = new String[]{requisicao, loginDriver, senhaDriver, rangeRotaStr};
+            String[] resultado = new String[]{requisicao, loginDriver, senhaDriver};
             return resultado;
         } else if (requisicao.equals("fim")){
             String[] resultado = new String[]{requisicao};
             return resultado;
-        } else if (requisicao.equals("carDados")){
-            String idCar = jsonObject.getString("idCar");
-            String classCar = jsonObject.getString("classeCar");
-            String[] resultado = new String[]{requisicao, idCar, classCar};
+        } else if (requisicao.equals("dataCar")){
+            String idCar = jsonObject.getString("idAuto");
+            double emissao = jsonObject.getDouble("CO2Emission");
+            double distanciaPercorrida = jsonObject.getDouble("distanciaPercorrida");
+            String emissaoStr = Double.toString(emissao);
+            String distanciaPercorridaStr = Double.toString(distanciaPercorrida);
+            String[] resultado = new String[]{requisicao, idCar, emissaoStr, distanciaPercorridaStr};
             return resultado;
         }
 

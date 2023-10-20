@@ -50,7 +50,7 @@ public class FuelStation extends Thread implements Serializable {
                     
             // converte a mensagem descriptografada para string
             String mensagemDescString = new String(mensagemDescriptografadaBytes);
-            System.out.println(mensagemDescString);
+           
         } catch (Exception e) {
             e.printStackTrace();
         }
