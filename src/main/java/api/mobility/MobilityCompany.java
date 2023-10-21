@@ -96,7 +96,7 @@ public class MobilityCompany extends Thread implements Serializable{
             // caso a requisição seja do tipo criar conta a conta é criada e um retorno de OK é dado ao cliente
             if ("rota".equals(resposta[0])){
                 int rangeRota = Integer.parseInt(resposta[3]);
-                for(int i = 0; i < 9; i++){
+                for(int i = 0; i < rangeRota; i++){
                     idItinerario = this.generateRandomID();
                     String msg = this.buscaRotaID(idItinerario);
                     byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());
@@ -111,13 +111,15 @@ public class MobilityCompany extends Thread implements Serializable{
                     objeto.flush();
                 }
             } else if("fim".equals(resposta[0])){
+                
                 rotasExecutadas.add(rota);
                 rotasEmExecucao.remove(rota);
-                //System.out.println(rotasExecutadas);
+                System.out.println(rotasExecutadas);
                 System.out.println("Dados Recebidos!");
                 verifica =  false;
+
             } else if ("carDados".equals(resposta[0])){
-                System.out.println("MobilityCompany: carro " + resposta[1] + " esperando driver para iniciar rota!");
+                System.out.println(resposta[3]);
             }
 
         } catch (IOException e) {
@@ -244,7 +246,7 @@ public class MobilityCompany extends Thread implements Serializable{
             rotaExecutavel[1] = rotaEncontrada.getEdges();
             rotasEmExecucao.add(rotaEncontrada); // adiciona a rota encontrada em routesEmExecucao
             rotasNaoExecutadas.remove(rotaEncontrada); // remove a rota encontrada de rotasNaoExecutadas
-            System.out.println(rotasEmExecucao);
+            //System.out.println(rotasEmExecucao);
             this.setItinerary(rotaExecutavel);
             rota = rotaEncontrada;
             return rotaEncontrada.getEdges();

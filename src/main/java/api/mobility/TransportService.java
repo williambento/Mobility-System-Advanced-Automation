@@ -31,7 +31,7 @@ public class TransportService extends Thread {
 
 			this.initializeRoutes();
 
-			this.auto.start();
+			//this.auto.start();
 
 			while (this.on_off) {
 				try {

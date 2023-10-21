@@ -120,7 +120,7 @@ public class Driver extends Thread implements Serializable {
             MobilityCompany receivedTestServer =  (MobilityCompany) _objeto.readObject();
             System.out.println("Driver " + getIdMotorista() + ": rota recebida, INICIANDO VIAGEM!");
             System.out.println("------------------------------");
-            for(int i = 0; i < 9; i++){
+            for(int i = 0; i < rangeRota; i++){
                 simula(receivedTestServer, _out, _in, _socket);
             }
         } catch (Exception e) {
@@ -185,14 +185,14 @@ public class Driver extends Thread implements Serializable {
 				TransportService tS1 = new TransportService(true, "Lavras", _company, carro, sumo);
 				tS1.start();
                 Thread.sleep(4000);
-                //carro.start();
+                carro.start();
 		        //int i = 0;
                 while (_company.isOn()) {
                     carro.atualizaSensores();
                     dadosJson = carro.getJsonDados(); // Obtém os dados JSON
                     /*System.out.println("Combustivel: " + carro.getFuelConsumption());
                     System.out.println(dadosJson);*/
-                    //System.out.println("Driver: " + dadosJson);
+                    System.out.println("Driver: " + dadosJson);
                     String input = carro.getRouteID();
                     //System.out.println(input);
                     String result = input.replaceAll("_[^\\s]*", "");
@@ -272,7 +272,7 @@ public class Driver extends Thread implements Serializable {
             int personCapacity = 1;
             int personNumber = 1;
             SumoColor green = new SumoColor(0, 255, 0, 126);
-            Cars a1 = new Cars(true, this.idCar, green,"D1", sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
+            Cars a1 = new Cars(true, this.idCar, green, id, sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
             setCar(a1);
             return a1;
         } catch (Exception e) {

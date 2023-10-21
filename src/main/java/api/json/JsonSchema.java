@@ -58,9 +58,12 @@ public class JsonSchema {
             String[] resultado = new String[]{requisicao};
             return resultado;
         } else if (requisicao.equals("carDados")){
-            String idCar = jsonObject.getString("idCar");
-            String classCar = jsonObject.getString("classeCar");
-            String[] resultado = new String[]{requisicao, idCar, classCar};
+            String idCar = jsonObject.getString("idAuto");
+            double CO2Emission = jsonObject.getDouble("CO2Emission");
+            double distanciaPercorrida = jsonObject.getDouble("distanciaPercorrida");
+            String CO2EmissionStr = Double.toString(CO2Emission);
+            String distanciaPercorridaStr = Double.toString(distanciaPercorrida);
+            String[] resultado = new String[]{requisicao, idCar, CO2EmissionStr, distanciaPercorridaStr};
             return resultado;
         }
 

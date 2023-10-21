@@ -23,17 +23,17 @@ public class Run {
             ipiranga.start();
             Thread.sleep(1000);
             int rangeRota = 0;
-            //for (int i = 0; i < 5; i++){
-                rangeRota = 9;
-                String id = "DRIVER" + (1);
+            for (int i = 0; i < 1; i++){
+                rangeRota = 2;
+                String id = "DRIVER" + (i + 1);
                 String senha = id + "2023";
-                String idCar = "CAR" + (1);
+                String idCar = "CAR" + (i + 1);
                 Driver d1 = new Driver(id, senha, idCar, rangeRota);
                 d1.start();
                 d1.join();
                 Thread.sleep(100);
                
-            //}
+            }
             /*d2.start();
             d2.join();
             d3.start();

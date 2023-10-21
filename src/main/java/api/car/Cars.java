@@ -1,12 +1,32 @@
 package api.car;
 
 import de.tudresden.sumo.cmd.Vehicle;
-import java.util.ArrayList;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.FileOutputStream;
+
+/* 
+import org.osgeo.proj4j.CRSFactory;
+import org.osgeo.proj4j.CoordinateReferenceSystem;
+import org.osgeo.proj4j.Proj;
+import org.osgeo.proj4j.ProjCoordinate;
+*/
 import it.polito.appeal.traci.SumoTraciConnection;
 import app.json.JsonSchema;
 import de.tudresden.sumo.objects.SumoColor;
 import de.tudresden.sumo.objects.SumoPosition2D;
+import io.sim.crypto.Crypto;
 
 public class Cars extends Thread {
 
@@ -30,6 +50,9 @@ public class Cars extends Thread {
 
 	private double speed;
 	private String routeID;
+	private double emissaoCO2;
+
+	private int simulationCount = 1;
 	
 	public Cars(boolean _on_off, String _idAuto, SumoColor _colorAuto, String _driverID, SumoTraciConnection _sumo, long _acquisitionRate,
 			int _fuelType, int _fuelPreferential, double _fuelPrice, int _personCapacity, int _personNumber) throws Exception {
@@ -63,12 +86,23 @@ public class Cars extends Thread {
 
 	@Override
 	public void run() {
-		
+		Socket carSocket;
+		try {
+			carSocket = new Socket("127.0.0.1", 2000);
+			DataInputStream input = new DataInputStream(carSocket.getInputStream());
+			DataOutputStream output = new DataOutputStream(carSocket.getOutputStream());
+			ObjectInputStream objeto = new ObjectInputStream(carSocket.getInputStream());
+			
+			enviaDados("carDados", input, output, objeto, carSocket);	
+			exportToExcel("data/data_car.xlsx");
+			//Cars.sleep(this.acquisitionRate);
+			Thread.sleep(10);
+			
+		} catch (InterruptedException | IOException e) {
+			e.printStackTrace();
+		}
 		while (this.on_off) {
 			try {
-				//Cars.sleep(this.acquisitionRate);
-				this.atualizaSensores();
-				Thread.sleep(1000);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -82,6 +116,9 @@ public class Cars extends Thread {
 			if (sumo != null && !sumo.isClosed()) {
 				SumoPosition2D sumoPosition2D;
 				sumoPosition2D = (SumoPosition2D) sumo.do_job_get(Vehicle.getPosition(this.idAuto));
+				double x = sumoPosition2D.x;
+				double y = sumoPosition2D.y;
+
 
 				//System.out.println("AutoID: " + this.getIdAuto());
 				//System.out.println("RoadID: " + (String) this.sumo.do_job_get(Vehicle.getRoadID(this.idAuto)));
@@ -119,9 +156,13 @@ public class Cars extends Thread {
 						this.personCapacity,
 						// the total number of persons that can ride in this vehicle
 						
-						this.personNumber
+						this.personNumber,
 						// the total number of persons which are riding in this vehicle
+						(double) sumo.do_job_get(Vehicle.getDistance(this.idAuto)),
+						(String) this.sumo.do_job_get(Vehicle.getRoadID(this.idAuto))
+					
 
+					
 				);
 
 				// Criar relat�rio auditoria / alertas
@@ -188,11 +229,13 @@ public class Cars extends Thread {
 				//System.out.println("Distancia: " + totalDistance);
 				controlaCombustiverl(consumo);	
 				//System.out.println(getFuelConsumption());			
-				
+				this.routeID = (String) sumo.do_job_get(Vehicle.getRouteID(this.idAuto)); // obtem o consumo de combustivel
+
 				// Chame o método para criar os dados JSON e salve no campo
                 this.dadosJson = JsonSchema.carDados("dataCar", this.idAuto, this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission(), this.totalDistance);
-				System.out.println("Driver: " + dadosJson);
-				System.out.println("Combustivel: " + fuelTank);
+				//System.out.println("Driver: " + dadosJson);
+				//System.out.println("Combustivel: " + fuelTank);
+
 			} else {
 				//System.out.println("SUMO is closed...");
 			}
@@ -328,4 +371,134 @@ public class Cars extends Thread {
 	public double getSpeed(){
 		return speed;
 	}
+
+	public void enviaDados(String _request, DataInputStream _in, DataOutputStream _out, ObjectInputStream _objeto, Socket _socket) {
+		try {
+			String ultimoDataCar = ""; // Variável para armazenar o JSON anterior
+	
+			while (true) {
+				//atualizaSensores(); // Atualize os sensores para obter dados atualizados
+				String novoDataCar = JsonSchema.carDados(_request, getIdAuto(), getCO2Emission(), getDistance());
+	
+		
+				this.atualizaSensores();
+				if (novoDataCar.equals(ultimoDataCar)) {
+					// metodo para sai do loop
+					System.out.println("Driver: rota finalizada, dados sincronizados com o servidor!");
+					break;
+				}
+		
+				// criptografa a mensagem usando a classe Crypto
+				//System.out.println(novoDataCar);
+				byte[] encryptedMessage = Crypto.encrypt(novoDataCar.getBytes(), geraChave(), geraIv());
+	
+				// envia a mensagem criptografada ao servidor
+				_out.write(encryptedMessage);
+				_out.flush();
+
+				ultimoDataCar = novoDataCar;
+				//System.out.println(novoDataCar);
+	
+				Thread.sleep(acquisitionRate); // Aguarde o tempo de aquisição definido
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public double getCO2Emission(){
+		return emissaoCO2;
+	}
+
+	// gera chave para a criptografia
+    public byte[] geraChave(){
+        // Crie uma chave de 128 bits (16 bytes)
+        byte[] chave = new byte[16];
+        // Preencha a chave com zeros neste exemplo
+        Arrays.fill(chave, (byte) 0);
+        return chave;
+    }
+
+    // gera iv para a criptografia
+    public byte[] geraIv(){
+        // Crie um IV de 16 bytes (inicialização aleatória)
+        byte[] iv = new byte[16];
+        // Preencha o IV com zeros neste exemplo
+        Arrays.fill(iv, (byte) 0);
+        return iv;
+    }
+
+	public double getDistance(){
+		return totalDistance;
+	}
+
+
+	// método para exportar dados da simulação para Excel
+	public void exportToExcel(String filePath) {
+		try (Workbook workbook = new XSSFWorkbook()) {
+			String currentCarID = null;
+			Sheet currentSheet = null;
+
+			for (DataCars data : drivingRepport) {
+				String carID = data.getAutoID();
+
+				// Verifique se o ID do carro mudou
+				if (!carID.equals(currentCarID)) {
+					// Se o ID do carro mudou, crie uma nova planilha com um nome único
+					currentSheet = workbook.createSheet("Car_" + carID + "_Simulation_" + simulationCount);
+					currentCarID = carID;
+
+					// Crie um novo cabeçalho para a nova planilha
+					Row headerRow = currentSheet.createRow(0);
+					String[] headers = {
+						"Timestamp", "IDCar", "IDRoute", "Speed", "Distance", "FuelConsumption", "FuelType", "CO2Emission",
+						"Latitude", "Longitude"
+					};
+
+					for (int i = 0; i < headers.length; i++) {
+						Cell cell = headerRow.createCell(i);
+						cell.setCellValue(headers[i]);
+					}
+				}
+
+				// Crie uma nova linha para os dados do carro atual
+				Row dataRow = currentSheet.createRow(currentSheet.getLastRowNum() + 1);
+
+				dataRow.createCell(0).setCellValue(data.getTimeStamp());
+				dataRow.createCell(1).setCellValue(data.getAutoID());
+				dataRow.createCell(2).setCellValue(getRouteID());
+				dataRow.createCell(3).setCellValue(data.getSpeed());
+				dataRow.createCell(4).setCellValue(data.getDistance());
+				dataRow.createCell(5).setCellValue(data.getFuelConsumption());
+				dataRow.createCell(6).setCellValue(data.getFuelType());
+				dataRow.createCell(7).setCellValue(data.getCo2Emission());
+				dataRow.createCell(8).setCellValue(data.getX_Position());
+				dataRow.createCell(9).setCellValue(data.getY_Position());
+			}
+
+			// Incrementa o contador de simulações
+			simulationCount++;
+
+			// Salve o arquivo Excel
+			try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
+				workbook.write(fileOut);
+			}
+
+			System.out.println("Dados exportados para Excel com sucesso.");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+
+	
+
+	public double getDistancia(){
+		return totalDistance;
+	}
+
 }
+
+
+

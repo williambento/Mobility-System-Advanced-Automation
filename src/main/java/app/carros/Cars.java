@@ -190,11 +190,16 @@ public class Cars extends Thread {
 				double consumo = (double) sumo.do_job_get(Vehicle.getFuelConsumption(this.idAuto)); // obtem o consumo de combustivel
 				System.out.println("Distancia: " + totalDistance);
 				controlaCombustiverl(consumo);	
+		
 				System.out.println(getFuelConsumption());			
-
 				// Chame o método para criar os dados JSON e salve no campo
                 this.dadosJson = JsonSchema.carDados("dataCar", this.idAuto, this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission(), this.totalDistance);
 				//System.out.println(dadosJson);
+
+
+
+				double[] distancia = (double[]) sumo.do_job_get(Vehicle.getPosition(this.idAuto));
+				System.out.println(distancia);
 			} else {
 				//System.out.println("SUMO is closed...");
 			}

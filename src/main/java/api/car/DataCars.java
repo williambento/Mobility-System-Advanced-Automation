@@ -1,5 +1,7 @@
 package api.car;
 
+import java.util.Date;
+
 public class DataCars {
 
 	/* SUMO's data */
@@ -21,7 +23,8 @@ public class DataCars {
 	private int personNumber;			// the total number of persons which are riding in this vehicle
 	private double co2Emission; 		// in mg/s for the last time step
 	private double HCEmission; 			// in mg/s for the last time step
-
+	private double distance;
+	private String routeID;
 	/* SEVEN GO Smart Edge's data */
 
 	// Chassis data (VIN)
@@ -137,7 +140,8 @@ public class DataCars {
 
 			String _autoID, String _driverID, long _timeStamp, double _x_Position, double _y_Position,
 			String _roadIDSUMO, String _routeIDSUMO, double _speed, double _odometer, double _fuelConsumption,
-			double _averageFuelConsumption, int _fuelType, double _fuelPrice, double _co2Emission, double _HCEmission, int _personCapacity, int _personNumber) {
+			double _averageFuelConsumption, int _fuelType, double _fuelPrice, double _co2Emission, double _HCEmission, int _personCapacity, int _personNumber
+			,double _distance, String _routeID) {
 
 		this.autoID = _autoID;
 		this.driverID = _autoID;
@@ -156,6 +160,8 @@ public class DataCars {
 		this.HCEmission = _HCEmission;
 		this.personCapacity = _personCapacity;
 		this.personNumber = _personNumber;
+		this.distance = _distance;
+		this.routeID = _routeID;
 
 	}
 
@@ -230,4 +236,16 @@ public class DataCars {
 	public void setAverageFuelConsumption(double _averageFuelConsumption) {
 		this.averageFuelConsumption = _averageFuelConsumption;
 	}
+
+    public double getDistancia() {
+        return distance;
+    }
+
+    public String getRouteID() {
+        return routeID;
+    }
+
+    public double getDistance() {
+        return distance;
+    }
 }
