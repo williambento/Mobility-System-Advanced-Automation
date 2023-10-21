@@ -46,7 +46,7 @@ public class Cars extends Thread {
 	private ArrayList<DataCars> drivingRepport;
 	private double totalDistance;
 	private double fuelTank;
-	private String dadosJson; // Campo para armazenar os dados JSON
+	private String novoDataCar; // Campo para armazenar os dados JSON
 
 	private double speed;
 	private String routeID;
@@ -86,27 +86,24 @@ public class Cars extends Thread {
 
 	@Override
 	public void run() {
+
 		Socket carSocket;
-		try {
-			carSocket = new Socket("127.0.0.1", 2000);
-			DataInputStream input = new DataInputStream(carSocket.getInputStream());
-			DataOutputStream output = new DataOutputStream(carSocket.getOutputStream());
-			ObjectInputStream objeto = new ObjectInputStream(carSocket.getInputStream());
-			
-			enviaDados("carDados", input, output, objeto, carSocket);	
-			exportToExcel("data/data_car.xlsx");
-			//Cars.sleep(this.acquisitionRate);
-			Thread.sleep(10);
-			
-		} catch (InterruptedException | IOException e) {
-			e.printStackTrace();
-		}
+	
 		while (this.on_off) {
 			try {
+				atualizaSensores();
+				carSocket = new Socket("127.0.0.1", 2000);
+				DataInputStream input = new DataInputStream(carSocket.getInputStream());
+				DataOutputStream output = new DataOutputStream(carSocket.getOutputStream());
+				ObjectInputStream objeto = new ObjectInputStream(carSocket.getInputStream());
+				enviaDados("carDados", input, output, objeto, carSocket);
+				//Cars.sleep(this.acquisitionRate);
+				Thread.sleep(100);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
+		exportToExcel("data/data_car.xlsx");
 
 	}
 
@@ -232,9 +229,10 @@ public class Cars extends Thread {
 				this.routeID = (String) sumo.do_job_get(Vehicle.getRouteID(this.idAuto)); // obtem o consumo de combustivel
 
 				// Chame o método para criar os dados JSON e salve no campo
-                this.dadosJson = JsonSchema.carDados("dataCar", this.idAuto, this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission(), this.totalDistance);
+            	novoDataCar = JsonSchema.carDados("carDados", getIdAuto(), getCO2Emission(), getDistancia());
 				//System.out.println("Driver: " + dadosJson);
 				//System.out.println("Combustivel: " + fuelTank);
+				//System.out.println(dadosJson);
 
 			} else {
 				//System.out.println("SUMO is closed...");
@@ -340,11 +338,11 @@ public class Cars extends Thread {
 	}*/
 
 	public String getJsonDados(){
-		return dadosJson;
+		return novoDataCar;
 	}
 
 	public void setJsonDados(String json){
-		dadosJson = json;
+		novoDataCar = json;
 	}
 
 	public String getRouteID(){
@@ -375,33 +373,24 @@ public class Cars extends Thread {
 	public void enviaDados(String _request, DataInputStream _in, DataOutputStream _out, ObjectInputStream _objeto, Socket _socket) {
 		try {
 			String ultimoDataCar = ""; // Variável para armazenar o JSON anterior
-	
-			while (true) {
-				//atualizaSensores(); // Atualize os sensores para obter dados atualizados
-				String novoDataCar = JsonSchema.carDados(_request, getIdAuto(), getCO2Emission(), getDistance());
-	
-		
-				this.atualizaSensores();
-				if (novoDataCar.equals(ultimoDataCar)) {
-					// metodo para sai do loop
-					System.out.println("Driver: rota finalizada, dados sincronizados com o servidor!");
-					break;
-				}
-		
-				// criptografa a mensagem usando a classe Crypto
-				//System.out.println(novoDataCar);
+			// while (this.on_off) {
+			// System.out.println(novoDataCar);
+			if (novoDataCar.equals(ultimoDataCar)) {
+				// Método para sair do loop e parar o envio de dados
+				System.out.println("Driver: rota finalizada, dados sincronizados com o servidor!");
+				this.on_off = false;				
+			} else {
+				// Criptografa a mensagem usando a classe Crypto
+				// System.out.println(novoDataCar);
 				byte[] encryptedMessage = Crypto.encrypt(novoDataCar.getBytes(), geraChave(), geraIv());
-	
-				// envia a mensagem criptografada ao servidor
+				// Envia a mensagem criptografada ao servidor
 				_out.write(encryptedMessage);
 				_out.flush();
-
 				ultimoDataCar = novoDataCar;
-				//System.out.println(novoDataCar);
-	
+				// System.out.println(novoDataCar);
 				Thread.sleep(acquisitionRate); // Aguarde o tempo de aquisição definido
 			}
-
+			// }
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -435,12 +424,14 @@ public class Cars extends Thread {
 
 
 	// método para exportar dados da simulação para Excel
-	public void exportToExcel(String filePath) {
+	public void exportToExcel(String filePatht) {
 		try (Workbook workbook = new XSSFWorkbook()) {
+
 			String currentCarID = null;
 			Sheet currentSheet = null;
-
+			
 			for (DataCars data : drivingRepport) {
+				//this.atualizaSensores();
 				String carID = data.getAutoID();
 
 				// Verifique se o ID do carro mudou
@@ -481,7 +472,7 @@ public class Cars extends Thread {
 			simulationCount++;
 
 			// Salve o arquivo Excel
-			try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
+			try (FileOutputStream fileOut = new FileOutputStream(filePatht)) {
 				workbook.write(fileOut);
 			}
 
@@ -490,14 +481,27 @@ public class Cars extends Thread {
 			e.printStackTrace();
 		}
 	}
-	
-
-	
 
 	public double getDistancia(){
 		return totalDistance;
 	}
 
+
+	//msg finaliza
+    public void msgFinaliza(DataOutputStream _out){
+        try{
+            String requestCriaConta = JsonSchema.finalizar("fim");
+            // Criptografe a mensagem usando a classe Crypto
+            byte[] encryptedMessage = Crypto.encrypt(requestCriaConta.getBytes(), geraChave(), geraIv());
+            // Envie a mensagem criptografada ao servidor
+            _out.write(encryptedMessage);
+            _out.flush();
+            //System.out.println("msg de fim enviada");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
 
 

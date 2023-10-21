@@ -38,6 +38,13 @@ public class MobilityCompany extends Thread implements Serializable{
     private boolean on;
     private boolean verifica;
 
+    private double distanciaPercorrida;
+    private double valorPago;
+    private int completas;
+    private String idDriver;
+
+    private boolean pagar;
+
     public MobilityCompany(int PORT){
         this.PORT = PORT;
         this.rotasNaoExecutadas = new ArrayList<Route>();
@@ -45,6 +52,7 @@ public class MobilityCompany extends Thread implements Serializable{
         this.rotasExecutadas = new ArrayList<Route>();
         this.on = true;
         this.verifica = true;
+        this.pagar = false;
         addRoutes();
     }
 
@@ -57,11 +65,11 @@ public class MobilityCompany extends Thread implements Serializable{
             Socket socket_banco = new Socket(HOST, PORT_BANCO);
             // inicia criando a conta no banco
             criarConta(socket_banco);
-
+           
+            // aguarda e aceita conexões de clientes
             while (verifica) {
-                // aguarda e aceita conexões de clientes
                 Socket clienteSocket = socket.accept();
-                System.out.println("Cliente conectado ao MobilityCompany!");
+                //System.out.println("Cliente conectado ao MobilityCompany!");
                 request(clienteSocket);
             }
 
@@ -96,6 +104,7 @@ public class MobilityCompany extends Thread implements Serializable{
             // caso a requisição seja do tipo criar conta a conta é criada e um retorno de OK é dado ao cliente
             if ("rota".equals(resposta[0])){
                 int rangeRota = Integer.parseInt(resposta[3]);
+                idDriver = resposta[1];
                 for(int i = 0; i < rangeRota; i++){
                     idItinerario = this.generateRandomID();
                     String msg = this.buscaRotaID(idItinerario);
@@ -119,7 +128,14 @@ public class MobilityCompany extends Thread implements Serializable{
                 verifica =  false;
 
             } else if ("carDados".equals(resposta[0])){
-                System.out.println(resposta[3]);
+                Double numeroValueOf = Double.valueOf(resposta[3]);
+                geraPagamento(numeroValueOf);
+                System.out.println(numeroValueOf);
+                if (pagar == true){
+                    System.out.println("entrou");
+                    emitirPagamentoDriver(getIDDriver(), valorPago);
+                    pagar = false;
+                }
             }
 
         } catch (IOException e) {
@@ -265,5 +281,45 @@ public class MobilityCompany extends Thread implements Serializable{
         return this.on;
     }
 
+    // requisicao para criar conta no AlphaBank
+    public void emitirPagamentoDriver(String _idDriver, double valor){
+        try {
+            Socket socket = new Socket("127.0.0.1", 3000);
+            DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+            DataInputStream input = new DataInputStream(socket.getInputStream());
+
+            String requestPagar = JsonSchema.pagar("pagar", "mobility_company", "company2023", _idDriver, valor);
+            // criptografa a mensagem
+            byte[] mensagemCrypto = Crypto.encrypt(requestPagar.getBytes(), geraChave(), geraIv());
+            // envia a mensagem criptografada ao servidor
+            output.write(mensagemCrypto);
+            output.flush();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // metodo para emitir pagamento
+    public void geraPagamento(double distancia) {
+        this.distanciaPercorrida = distancia;
+        double pagamento = 3.25; // Cada 1000 metros completos equivalem a R$5
+        // Verifica se foram percorridos pelo menos 1000 metros
+
+        if (completas != 0 ){
+            this.distanciaPercorrida = this.distanciaPercorrida - (completas * 500);
+        }
+
+        if (this.distanciaPercorrida >= 500) {
+            completas = this.completas + 1; // Calcula quantos milhares de metros foram completos
+            this.valorPago += pagamento;
+            System.out.println("MoblitityCompany: pagamento emitido ao " + getIDDriver());
+            pagar = true;
+        }
+    }
+
+    public String getIDDriver(){
+        return idDriver;
+    }
 
 }

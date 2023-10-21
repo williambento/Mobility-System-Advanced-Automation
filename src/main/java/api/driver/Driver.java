@@ -192,7 +192,7 @@ public class Driver extends Thread implements Serializable {
                     dadosJson = carro.getJsonDados(); // Obtém os dados JSON
                     /*System.out.println("Combustivel: " + carro.getFuelConsumption());
                     System.out.println(dadosJson);*/
-                    System.out.println("Driver: " + dadosJson);
+                    //System.out.println("Driver: " + dadosJson);
                     String input = carro.getRouteID();
                     //System.out.println(input);
                     String result = input.replaceAll("_[^\\s]*", "");

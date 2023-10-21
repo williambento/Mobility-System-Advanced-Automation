@@ -27,15 +27,14 @@ public class AlphaBank extends Thread implements Serializable{
         try {
             socket = new ServerSocket(PORT);
             System.out.println("AlphaBank online...");
-
+            Socket clienteSocket;
             while (true) {
                 // aguarda e aceita conexões de clientes
-                Socket clienteSocket = socket.accept();
+                clienteSocket = socket.accept();
                 System.out.println("AlphaBank: cliente conectado");
                 request(clienteSocket);
-                clienteSocket.close();
+                //clienteSocket.close();
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -61,7 +60,7 @@ public class AlphaBank extends Thread implements Serializable{
             String mensagemDescString = new String(mensagemDescriptografadaBytes);
             // torna os dados acessiveis
             String[] resposta = JsonSchema.convertJsonString(mensagemDescString);
-    
+            System.out.println(resposta[0]);
             // caso a requisição seja do tipo criar conta a conta é criada e um retorno de OK é dado ao cliente
             if ("criarConta".equals(resposta[0])){
                 Account conta = buscarContaCorrentePorIDDriver(resposta[1]);
@@ -77,6 +76,9 @@ public class AlphaBank extends Thread implements Serializable{
                     _out.write(mensagemCrypto);
                     _out.flush();
                 } 
+            } else if ("pagar".equals(resposta[0])){   
+                processarPagamento(resposta[1], resposta[2], resposta[3], 3.25);
+                mostrarSaldoContas();
             }
 
         } catch (IOException e) {
@@ -125,6 +127,54 @@ public class AlphaBank extends Thread implements Serializable{
             }
         }
         return null; // Retorna null se não encontrar uma conta com o IDDriver especificado
+    }
+
+    // Método para sacar dinheiro de uma conta
+    public void sacar(String id, double valor) {
+        Account contaDriver = buscarContaCorrentePorIDDriver(id);
+        if (contaDriver != null) {
+            if (contaDriver.sacar(valor)) {
+                System.out.println("AlphaBank: Saque de " + valor + " da conta da MobilityCompany " + id + " realizado com sucesso.");
+            } else {
+                System.out.println("AlphaBank: Saque de " + valor + " da conta do motorista " + id + " não foi possível devido a saldo insuficiente.");
+            }
+        } else {
+            System.out.println("AlphaBank: Conta do motorista " + id + " não encontrada.");
+        }
+    }
+
+    // Método para depositar dinheiro em uma conta
+    public void depositar(String idDriver, double valor) {
+        Account contaDriver = buscarContaCorrentePorIDDriver(idDriver);
+        if (contaDriver != null) {
+            contaDriver.depositar(valor);
+            System.out.println("AlphaBank: Depósito de " + valor + " na conta do motorista " + idDriver + " realizado com sucesso.");
+        } else {
+            System.out.println("AlphaBank: Conta do motorista " + idDriver + " não encontrada.");
+        }
+    }
+
+    // Método para processar a solicitação de pagamento
+    public void processarPagamento(String idCompany, String senhaCompany, String idDriver, double valor) {
+        Account contaCompany = buscarContaCorrentePorIDDriver(idCompany);
+        if (contaCompany != null && contaCompany.getSenha().equals(senhaCompany)) {
+            if (contaCompany.sacar(valor)) {
+                depositar(idDriver, valor);
+                System.out.println("AlphaBank: Pagamento de " + valor + " realizado com sucesso da conta da empresa " + idCompany + " para a conta do motorista " + idDriver);
+            } else {
+                System.out.println("AlphaBank: Pagamento de " + valor + " da conta da empresa " + idCompany + " para a conta do motorista " + idDriver + " não foi possível devido a saldo insuficiente.");
+            }
+        } else {
+            System.out.println("AlphaBank: Empresa não autorizada ou senha inválida.");
+        }
+    }
+
+    // Método para mostrar o saldo de todas as contas
+    public void mostrarSaldoContas() {
+        System.out.println("Saldo das contas no AlphaBank:");
+        for (Account conta : accounts) {
+            System.out.println("Conta: " + conta.getNumeroConta() + ", Titular: " + conta.getLogin() + ", Saldo: " + conta.getSaldo());
+        }
     }
 
 }

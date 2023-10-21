@@ -22,6 +22,10 @@ public class Account extends Thread implements Serializable{
         return saldo;
     }
 
+    public String getSenha(){
+        return senha;
+    }
+
     public int getNumeroConta(){
         return numeroConta;
     }

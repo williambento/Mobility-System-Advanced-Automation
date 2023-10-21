@@ -2,8 +2,6 @@ package api.json;
 
 import org.json.JSONObject;
 
-import api.car.Cars;
-
 public class JsonSchema {
     // padrao de requisição para criar conta
     public static String criarConta(String _request, String _login, String _senha, double _deposito) {
@@ -65,17 +63,27 @@ public class JsonSchema {
             String distanciaPercorridaStr = Double.toString(distanciaPercorrida);
             String[] resultado = new String[]{requisicao, idCar, CO2EmissionStr, distanciaPercorridaStr};
             return resultado;
+        } else if (requisicao.equals("pagar")){
+            String loginCompany = jsonObject.getString("login");
+            String senhaCompany = jsonObject.getString("senha");
+            String idDriver = jsonObject.getString("driver");
+            double valorPagar = jsonObject.getDouble("pagamento");
+            String valorPagarStr = Double.toString(valorPagar);
+            String[] resultado = new String[]{requisicao, loginCompany, senhaCompany, idDriver, valorPagarStr};
+            return resultado;
         }
 
         String[] resultado = new String[]{requisicao};
         return resultado;
     }
 
-    public static String dadosCar(String _request, String _idCar, Class<? extends Cars> _class1) {
+    public static String pagar(String _request, String _idCompany, String _senha, String _idDriver, double _valor){
         JSONObject json = new JSONObject();
         json.put("request", _request);
-        json.put("idCar", _idCar);
-        json.put("classeCar", _class1);
+        json.put("login", _idCompany);
+        json.put("senha", _senha);
+        json.put("driver", _idDriver);
+        json.put("pagamento", _valor);
         return json.toString();
     }
 
