@@ -38,12 +38,11 @@ public class MobilityCompany extends Thread implements Serializable{
     private boolean on;
     private boolean verifica;
 
-    private double distanciaPercorrida;
-    private double valorPago;
-    private int completas;
     private String idDriver;
 
     private boolean pagar;
+    private int completas;
+    private double distancia;
 
     public MobilityCompany(int PORT){
         this.PORT = PORT;
@@ -52,7 +51,7 @@ public class MobilityCompany extends Thread implements Serializable{
         this.rotasExecutadas = new ArrayList<Route>();
         this.on = true;
         this.verifica = true;
-        this.pagar = false;
+        this.completas = 0;
         addRoutes();
     }
 
@@ -81,6 +80,7 @@ public class MobilityCompany extends Thread implements Serializable{
     // metodo para receber mensagens
     public void request(Socket _socket){
         try {
+            BotPayment botPagar = new BotPayment();
             // entrada e saida
             DataInputStream _in = new DataInputStream(_socket.getInputStream());
             DataOutputStream _out = new DataOutputStream(_socket.getOutputStream());
@@ -123,19 +123,15 @@ public class MobilityCompany extends Thread implements Serializable{
                 
                 rotasExecutadas.add(rota);
                 rotasEmExecucao.remove(rota);
-                System.out.println(rotasExecutadas);
+                //System.out.println(rotasExecutadas);
                 System.out.println("Dados Recebidos!");
-                verifica =  false;
+                distancia = 0;
+                completas = 0;
+                //verifica =  false;
 
             } else if ("carDados".equals(resposta[0])){
-                Double numeroValueOf = Double.valueOf(resposta[3]);
-                geraPagamento(numeroValueOf);
-                System.out.println(numeroValueOf);
-                if (pagar == true){
-                    System.out.println("entrou");
-                    emitirPagamentoDriver(getIDDriver(), valorPago);
-                    pagar = false;
-                }
+                distancia = Double.valueOf(resposta[3]);
+                botPagar.start();
             }
 
         } catch (IOException e) {
@@ -281,45 +277,69 @@ public class MobilityCompany extends Thread implements Serializable{
         return this.on;
     }
 
-    // requisicao para criar conta no AlphaBank
-    public void emitirPagamentoDriver(String _idDriver, double valor){
-        try {
-            Socket socket = new Socket("127.0.0.1", 3000);
-            DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-            DataInputStream input = new DataInputStream(socket.getInputStream());
-
-            String requestPagar = JsonSchema.pagar("pagar", "mobility_company", "company2023", _idDriver, valor);
-            // criptografa a mensagem
-            byte[] mensagemCrypto = Crypto.encrypt(requestPagar.getBytes(), geraChave(), geraIv());
-            // envia a mensagem criptografada ao servidor
-            output.write(mensagemCrypto);
-            output.flush();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    // metodo para emitir pagamento
-    public void geraPagamento(double distancia) {
-        this.distanciaPercorrida = distancia;
-        double pagamento = 3.25; // Cada 1000 metros completos equivalem a R$5
-        // Verifica se foram percorridos pelo menos 1000 metros
-
-        if (completas != 0 ){
-            this.distanciaPercorrida = this.distanciaPercorrida - (completas * 500);
-        }
-
-        if (this.distanciaPercorrida >= 500) {
-            completas = this.completas + 1; // Calcula quantos milhares de metros foram completos
-            this.valorPago += pagamento;
-            System.out.println("MoblitityCompany: pagamento emitido ao " + getIDDriver());
-            pagar = true;
-        }
-    }
 
     public String getIDDriver(){
         return idDriver;
+    }
+
+    public class BotPayment extends Thread {
+
+        private double distanciaPercorrida;
+        private double auxDistance;
+        private double valorPago;
+        private double valor;
+        private String idDriver;
+        private boolean pagar;
+
+        public BotPayment(){
+            this.distanciaPercorrida = distancia;
+            this.idDriver = getIDDriver();
+            this.pagar = false;
+        }
+
+        public void run(){
+            geraPagamento(distanciaPercorrida);
+            if (pagar == true){
+                emitirPagamentoDriver(idDriver, valor);
+                this.pagar = false;
+            }
+        }
+
+        // requisicao para criar conta no AlphaBank
+        public void emitirPagamentoDriver(String _idDriver, double valor){
+            try {
+                Socket socket = new Socket("127.0.0.1", 3000);
+                DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+                DataInputStream input = new DataInputStream(socket.getInputStream());
+
+                String requestPagar = JsonSchema.pagar("pagar", "mobility_company", "company2023", _idDriver, 3.25);
+                // criptografa a mensagem
+                byte[] mensagemCrypto = Crypto.encrypt(requestPagar.getBytes(), geraChave(), geraIv());
+                // envia a mensagem criptografada ao servidor
+                output.write(mensagemCrypto);
+                output.flush();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        // metodo para emitir pagamento
+        public void geraPagamento(double distancia) {
+            this.distanciaPercorrida = distancia;
+            double pagamento = 3.25; // Cada 1000 metros completos equivalem a R$5
+            // Verifica se foram percorridos pelo menos 1000 metros
+    
+            if (completas != 0 ){
+                this.distanciaPercorrida = this.distanciaPercorrida - (completas * 1000);
+            }
+    
+            if (this.distanciaPercorrida >= 1000) {
+                completas = completas + 1; // Calcula quantos milhares de metros foram completos
+                this.valorPago += pagamento;
+                pagar = true;
+            }
+            
+        }
     }
 
 }

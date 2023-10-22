@@ -53,10 +53,12 @@ public class Cars extends Thread {
 	private double emissaoCO2;
 
 	private int simulationCount = 1;
+	private String ultimoDataCar;
 	
 	public Cars(boolean _on_off, String _idAuto, SumoColor _colorAuto, String _driverID, SumoTraciConnection _sumo, long _acquisitionRate,
 			int _fuelType, int _fuelPreferential, double _fuelPrice, int _personCapacity, int _personNumber) throws Exception {
 
+		this.ultimoDataCar = null;
 		this.on_off = _on_off;
 		this.idAuto = _idAuto;
 		this.colorAuto = _colorAuto;
@@ -88,7 +90,7 @@ public class Cars extends Thread {
 	public void run() {
 
 		Socket carSocket;
-	
+
 		while (this.on_off) {
 			try {
 				atualizaSensores();
@@ -97,13 +99,14 @@ public class Cars extends Thread {
 				DataOutputStream output = new DataOutputStream(carSocket.getOutputStream());
 				ObjectInputStream objeto = new ObjectInputStream(carSocket.getInputStream());
 				enviaDados("carDados", input, output, objeto, carSocket);
+
+
 				//Cars.sleep(this.acquisitionRate);
 				Thread.sleep(100);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
-		exportToExcel("data/data_car.xlsx");
 
 	}
 
@@ -372,21 +375,23 @@ public class Cars extends Thread {
 
 	public void enviaDados(String _request, DataInputStream _in, DataOutputStream _out, ObjectInputStream _objeto, Socket _socket) {
 		try {
-			String ultimoDataCar = ""; // Variável para armazenar o JSON anterior
 			// while (this.on_off) {
 			// System.out.println(novoDataCar);
-			if (novoDataCar.equals(ultimoDataCar)) {
-				// Método para sair do loop e parar o envio de dados
-				System.out.println("Driver: rota finalizada, dados sincronizados com o servidor!");
-				this.on_off = false;				
-			} else {
+            if (novoDataCar.equals(this.ultimoDataCar)) {
+                // Método para sair do loop e parar o envio de dados
+                msgFinaliza(_out);
+                System.out.println("Driver: rota finalizada, dados sincronizados com o servidor!");
+                this.on_off = false;
+                exportToExcel("data/data_car_" + simulationCount + ".xlsx"); // Exporta dados para uma nova planilha com um nome exclusivo
+                simulationCount++; // Incrementa o contador de simulações
+            } else {
 				// Criptografa a mensagem usando a classe Crypto
 				// System.out.println(novoDataCar);
 				byte[] encryptedMessage = Crypto.encrypt(novoDataCar.getBytes(), geraChave(), geraIv());
 				// Envia a mensagem criptografada ao servidor
 				_out.write(encryptedMessage);
 				_out.flush();
-				ultimoDataCar = novoDataCar;
+				this.ultimoDataCar = novoDataCar;
 				// System.out.println(novoDataCar);
 				Thread.sleep(acquisitionRate); // Aguarde o tempo de aquisição definido
 			}
@@ -422,23 +427,22 @@ public class Cars extends Thread {
 		return totalDistance;
 	}
 
-
 	// método para exportar dados da simulação para Excel
+// método para exportar dados da simulação para Excel
 	public void exportToExcel(String filePatht) {
 		try (Workbook workbook = new XSSFWorkbook()) {
-
-			String currentCarID = null;
-			Sheet currentSheet = null;
-			
 			for (DataCars data : drivingRepport) {
-				//this.atualizaSensores();
 				String carID = data.getAutoID();
 
-				// Verifique se o ID do carro mudou
-				if (!carID.equals(currentCarID)) {
-					// Se o ID do carro mudou, crie uma nova planilha com um nome único
-					currentSheet = workbook.createSheet("Car_" + carID + "_Simulation_" + simulationCount);
-					currentCarID = carID;
+				// Crie um nome único para a planilha com base no ID do carro e na simulação
+				String sheetName = "Simulação_" + simulationCount + "_Car_" + carID;
+
+				// Verifique se a planilha com o nome já existe no Workbook
+				Sheet currentSheet = workbook.getSheet(sheetName);
+
+				if (currentSheet == null) {
+					// Se não existe, crie uma nova planilha com o nome único
+					currentSheet = workbook.createSheet(sheetName);
 
 					// Crie um novo cabeçalho para a nova planilha
 					Row headerRow = currentSheet.createRow(0);
@@ -481,6 +485,9 @@ public class Cars extends Thread {
 			e.printStackTrace();
 		}
 	}
+
+
+
 
 	public double getDistancia(){
 		return totalDistance;

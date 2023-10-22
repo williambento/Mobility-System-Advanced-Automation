@@ -60,7 +60,6 @@ public class AlphaBank extends Thread implements Serializable{
             String mensagemDescString = new String(mensagemDescriptografadaBytes);
             // torna os dados acessiveis
             String[] resposta = JsonSchema.convertJsonString(mensagemDescString);
-            System.out.println(resposta[0]);
             // caso a requisição seja do tipo criar conta a conta é criada e um retorno de OK é dado ao cliente
             if ("criarConta".equals(resposta[0])){
                 Account conta = buscarContaCorrentePorIDDriver(resposta[1]);
@@ -78,7 +77,7 @@ public class AlphaBank extends Thread implements Serializable{
                 } 
             } else if ("pagar".equals(resposta[0])){   
                 processarPagamento(resposta[1], resposta[2], resposta[3], 3.25);
-                mostrarSaldoContas();
+                //mostrarSaldoContas();
             }
 
         } catch (IOException e) {
@@ -148,7 +147,7 @@ public class AlphaBank extends Thread implements Serializable{
         Account contaDriver = buscarContaCorrentePorIDDriver(idDriver);
         if (contaDriver != null) {
             contaDriver.depositar(valor);
-            System.out.println("AlphaBank: Depósito de " + valor + " na conta do motorista " + idDriver + " realizado com sucesso.");
+            //System.out.println("AlphaBank: Depósito de " + valor + " na conta do motorista " + idDriver + " realizado com sucesso.");
         } else {
             System.out.println("AlphaBank: Conta do motorista " + idDriver + " não encontrada.");
         }
