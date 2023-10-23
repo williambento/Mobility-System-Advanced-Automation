@@ -325,10 +325,6 @@ public class Driver extends Thread implements Serializable {
     }
 
     public class BotPayment extends Thread {
-        
-        public BotPayment(){
-    
-        }
 
         public void run(){
             abastecer("abastecer", getIdMotorista(), 0.2);
@@ -348,18 +344,6 @@ public class Driver extends Thread implements Serializable {
                 output.write(encryptedMessage);
                 output.flush();
 
-                // Receba a resposta criptografada do servidor
-                /*byte[] encryptedResponse = new byte[1024];
-                int length = input.read(encryptedResponse);
-                byte[] encryptedResponseBytes = new byte[length];
-                System.arraycopy(encryptedResponse, 0, encryptedResponseBytes, 0, length);
-        
-                // Descriptografe a resposta usando a classe Crypto
-                byte[] decryptedResponseBytes = Crypto.decrypt(encryptedResponseBytes, geraChave(), geraIv());
-                // Converte a resposta descriptografada para String
-                String resposta = new String(decryptedResponseBytes);
-                System.out.println(resposta);*/
-                // fecha conexao
             } catch (Exception e) {
                 e.printStackTrace();
             }
