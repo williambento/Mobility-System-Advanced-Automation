@@ -62,13 +62,11 @@ public class MobilityCompany extends Thread implements Serializable{
             String HOST = "127.0.0.1";
             int PORT_BANCO = 3000;  // Substitua pela porta real do servidor remoto
             Socket socket_banco = new Socket(HOST, PORT_BANCO);
-            // inicia criando a conta no banco
             criarConta(socket_banco);
            
             // aguarda e aceita conexões de clientes
             while (verifica) {
                 Socket clienteSocket = socket.accept();
-                //System.out.println("Cliente conectado ao MobilityCompany!");
                 request(clienteSocket);
             }
 
@@ -100,7 +98,7 @@ public class MobilityCompany extends Thread implements Serializable{
             // torna os dados acessiveis
             String[] resposta = JsonSchema.convertJsonString(mensagemDescString);
             //System.out.println(resposta[0]);
-    
+            int aux = 0;
             // caso a requisição seja do tipo criar conta a conta é criada e um retorno de OK é dado ao cliente
             if ("rota".equals(resposta[0])){
                 int rangeRota = Integer.parseInt(resposta[3]);
@@ -113,7 +111,12 @@ public class MobilityCompany extends Thread implements Serializable{
                     // envia a mensagem criptografada ao servidor
                     _out.write(envio);
                     _out.flush();
-                    System.out.println("MobilityCompany: rota enviada ao driver: " + resposta[1]);
+
+                    if(aux == 0){
+                        System.out.println("----------------------------");
+                        System.out.println("MobilityCompany: rota enviada ao driver: " + resposta[1]);
+                        aux = aux + 1;
+                    }
         
                     setIDItinerary(this.getItinerary()[0]);
                     objeto.writeObject(this);
@@ -123,14 +126,13 @@ public class MobilityCompany extends Thread implements Serializable{
                 
                 rotasExecutadas.add(rota);
                 rotasEmExecucao.remove(rota);
-                //System.out.println(rotasExecutadas);
-                System.out.println("Dados Recebidos!");
+                System.out.println("MobilityCompany: dados Recebidos!");
                 distancia = 0;
                 completas = 0;
-                //verifica =  false;
 
             } else if ("carDados".equals(resposta[0])){
                 distancia = Double.valueOf(resposta[3]);
+                System.out.println(resposta[0]);
                 botPagar.start();
             }
 
@@ -165,7 +167,7 @@ public class MobilityCompany extends Thread implements Serializable{
                     
             // converte a mensagem descriptografada para string
             String mensagemDescString = new String(mensagemDescriptografadaBytes);
-            //System.out.println(mensagemDescString);
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -258,7 +260,6 @@ public class MobilityCompany extends Thread implements Serializable{
             rotaExecutavel[1] = rotaEncontrada.getEdges();
             rotasEmExecucao.add(rotaEncontrada); // adiciona a rota encontrada em routesEmExecucao
             rotasNaoExecutadas.remove(rotaEncontrada); // remove a rota encontrada de rotasNaoExecutadas
-            //System.out.println(rotasEmExecucao);
             this.setItinerary(rotaExecutavel);
             rota = rotaEncontrada;
             return rotaEncontrada.getEdges();
@@ -298,7 +299,7 @@ public class MobilityCompany extends Thread implements Serializable{
         }
 
         public void run(){
-            geraPagamento(distanciaPercorrida);
+            verificaPagamento(distanciaPercorrida);
             if (pagar == true){
                 emitirPagamentoDriver(idDriver, valor);
                 this.pagar = false;
@@ -310,7 +311,6 @@ public class MobilityCompany extends Thread implements Serializable{
             try {
                 Socket socket = new Socket("127.0.0.1", 3000);
                 DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-                DataInputStream input = new DataInputStream(socket.getInputStream());
 
                 String requestPagar = JsonSchema.pagar("pagar", "mobility_company", "company2023", _idDriver, 3.25);
                 // criptografa a mensagem
@@ -318,13 +318,14 @@ public class MobilityCompany extends Thread implements Serializable{
                 // envia a mensagem criptografada ao servidor
                 output.write(mensagemCrypto);
                 output.flush();
+               
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
         // metodo para emitir pagamento
-        public void geraPagamento(double distancia) {
+        public void verificaPagamento(double distancia) {
             this.distanciaPercorrida = distancia;
             double pagamento = 3.25; // Cada 1000 metros completos equivalem a R$5
             // Verifica se foram percorridos pelo menos 1000 metros
@@ -334,6 +335,8 @@ public class MobilityCompany extends Thread implements Serializable{
             }
     
             if (this.distanciaPercorrida >= 1000) {
+                System.out.println("---------------------------------");
+                System.out.println("MobilityCompany: emissao de pagamento para " + getIDDriver());
                 completas = completas + 1; // Calcula quantos milhares de metros foram completos
                 this.valorPago += pagamento;
                 pagar = true;

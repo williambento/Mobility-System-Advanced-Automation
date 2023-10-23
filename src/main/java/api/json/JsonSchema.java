@@ -30,6 +30,16 @@ public class JsonSchema {
         return json.toString();
     }
 
+    // abastecer
+    public static String abastecer(String _request, String _id, String _senha, double _litros) {
+        JSONObject json = new JSONObject();
+        json.put("request", _request);
+        json.put("motorista", _id);
+        json.put("senha", _senha);
+        json.put("litros", _litros);
+        return json.toString();
+    }
+
     // converte mensagens vindas dos em dados separados
     public static String[] convertJsonString(String _objeto){
         // cria-se um objeto JSONObject a partir da string
@@ -70,6 +80,13 @@ public class JsonSchema {
             double valorPagar = jsonObject.getDouble("pagamento");
             String valorPagarStr = Double.toString(valorPagar);
             String[] resultado = new String[]{requisicao, loginCompany, senhaCompany, idDriver, valorPagarStr};
+            return resultado;
+        } else if (requisicao.equals("abastecer")){
+            String loginCompany = jsonObject.getString("motorista");
+            String senhaCompany = jsonObject.getString("senha");
+            double litros = jsonObject.getDouble("litros");
+            String litrosStr = Double.toString(litros);
+            String[] resultado = new String[]{requisicao, loginCompany, senhaCompany, litrosStr};
             return resultado;
         }
 

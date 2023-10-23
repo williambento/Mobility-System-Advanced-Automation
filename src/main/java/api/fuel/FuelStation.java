@@ -7,16 +7,22 @@ import java.io.Serializable;
 import java.net.Socket;
 import java.util.Arrays;
 
+import api.car.Cars;
 import api.crypto.Crypto;
 import api.json.JsonSchema;
 
 public class FuelStation extends Thread implements Serializable {
     
+    private Cars carro;
+
     public void run(){
         Socket postoSocket;
+        
         try {
             postoSocket = new Socket("127.0.0.1", 3000);
             criarConta(postoSocket);
+            //carro.abastecer(0.2);
+            
             while (true) {
 
             }
@@ -72,5 +78,9 @@ public class FuelStation extends Thread implements Serializable {
         // Preencha o IV com zeros neste exemplo
         Arrays.fill(iv, (byte) 0);
         return iv;
+    }
+
+    public void setCar(Cars _cars){
+        carro = _cars;
     }
 }

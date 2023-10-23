@@ -3,6 +3,8 @@ package api.bank;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -10,8 +12,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.xmlbeans.impl.xb.xsdschema.ListDocument.List;
+
+import api.car.Cars;
 import api.crypto.Crypto;
 import api.json.JsonSchema;
+import api.mobility.MobilityCompany;
 
 public class AlphaBank extends Thread implements Serializable{
     private ServerSocket socket;
@@ -77,7 +83,23 @@ public class AlphaBank extends Thread implements Serializable{
                 } 
             } else if ("pagar".equals(resposta[0])){   
                 processarPagamento(resposta[1], resposta[2], resposta[3], 3.25);
-                //mostrarSaldoContas();
+                //emitirExtrato();
+                String msgVerifica = resposta[3] +": pagamento recebido!";
+                System.out.println(msgVerifica);
+                System.out.println("----------------------------");
+                // criptografa a mensagem
+                byte[] mensagemCrypto = Crypto.encrypt(msgVerifica.getBytes(), geraChave(), geraIv());
+                // envia a mensagem criptografada ao servidor falando qua a conta foi criada
+                _out.write(mensagemCrypto);
+                _out.flush();
+                //emitirExtrato();
+            } else if ("abastecer".equals(resposta[0])){
+                System.out.println("----------------------------");
+                System.out.println("AlphaBank: " + resposta[1] + " pagou a FuelStation!");
+                /*envio.writeObject(receivedTestServer);
+                envio.flush();*/
+                processarPagamento(resposta[1], resposta[2], "fuel_station", 5.29);
+                //emitirExtrato();
             }
 
         } catch (IOException e) {
@@ -159,7 +181,7 @@ public class AlphaBank extends Thread implements Serializable{
         if (contaCompany != null && contaCompany.getSenha().equals(senhaCompany)) {
             if (contaCompany.sacar(valor)) {
                 depositar(idDriver, valor);
-                System.out.println("AlphaBank: Pagamento de " + valor + " realizado com sucesso da conta da empresa " + idCompany + " para a conta do motorista " + idDriver);
+                System.out.println("AlphaBank: pagamento de " + valor + " realizado com sucesso para o " + idDriver);
             } else {
                 System.out.println("AlphaBank: Pagamento de " + valor + " da conta da empresa " + idCompany + " para a conta do motorista " + idDriver + " não foi possível devido a saldo insuficiente.");
             }
@@ -175,5 +197,24 @@ public class AlphaBank extends Thread implements Serializable{
             System.out.println("Conta: " + conta.getNumeroConta() + ", Titular: " + conta.getLogin() + ", Saldo: " + conta.getSaldo());
         }
     }
+
+    // método para emitir o extrato de todas as contas
+    public void emitirExtrato() {
+        for (Account account : accounts) {
+            System.out.println("----------------------------");
+            System.out.println("Extrato da conta " + account.getNumeroConta() + " (" + account.getLogin() + "):");
+            ArrayList<Transaction> transactions = account.getTransactionHistory();
+    
+            for (Transaction transaction : transactions) {
+                System.out.println("Tipo: " + transaction.getType());
+                System.out.println("Valor: " + transaction.getAmount());
+                System.out.println("Timestamp (nanossegundos): " + transaction.getTimestamp());
+                System.out.println();
+            }
+    
+            System.out.println("Saldo atual: " + account.getSaldo());
+            System.out.println("------------------------------");
+        }
+    }  
 
 }

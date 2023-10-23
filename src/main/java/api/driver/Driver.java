@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -13,6 +14,7 @@ import java.util.Arrays;
 import api.mobility.MobilityCompany;
 import api.car.Cars;
 import api.crypto.Crypto;
+import api.fuel.FuelStation;
 import api.json.JsonSchema;
 import api.mobility.TransportService;
 import de.tudresden.sumo.objects.SumoColor;
@@ -28,12 +30,24 @@ public class Driver extends Thread implements Serializable {
     private SumoTraciConnection sumo;
     private String idCar;
     private int rangeRota;
+    private boolean abastecer;
+    private double tank;
+    private FuelStation posto;
 
-    public Driver(String _id, String _senha, String _idCar, int _rangeRoutes){
+    /*private ArrayList<String[]> rotasNaoExecutadas;
+    private ArrayList<String[]> rotasEmExecucao;
+    private ArrayList<String[]> rotasExecutadas;*/
+
+    public Driver(String _id, String _senha, String _idCar, int _rangeRoutes, FuelStation _posto){
+        /*this.rotasNaoExecutadas = new ArrayList<>();
+        this.rotasEmExecucao = new ArrayList<>();
+        this.rotasExecutadas = new ArrayList<>();*/
         this.id = _id;
         this.senha = _senha;
         this.idCar = _idCar;
         this.rangeRota = _rangeRoutes;
+        this.abastecer = true;
+        this.posto = _posto;
         //this.carro = criaCarro();
     }
 
@@ -115,14 +129,25 @@ public class Driver extends Thread implements Serializable {
             // converte a resposta descriptografada para String
             String resposta = new String(decryptedResponseBytes);
             pegaUltimaEdge(resposta);
-
             // recebe um objeto to tipo String[] com os dados de execução da rota
+
+
             MobilityCompany receivedTestServer =  (MobilityCompany) _objeto.readObject();
-            System.out.println("Driver " + getIdMotorista() + ": rota recebida, INICIANDO VIAGEM!");
             System.out.println("------------------------------");
+            System.out.println(getIdMotorista() + ": rota recebida, INICIANDO VIAGEM!");
+            System.out.println("------------------------------");
+            
+            //System.out.println("Rotas não executadas:");
+
             for(int i = 0; i < rangeRota; i++){
-                simula(receivedTestServer, _out, _in, _socket);
+                //rotasNaoExecutadas.add(receivedTestServer.getItinerary());
+                simula(receivedTestServer, _out, _in, _socket, i);
             }
+
+            /*for (String[] rota : rotasNaoExecutadas){
+                System.out.println(Arrays.toString(rota));
+            }*/
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -151,6 +176,10 @@ public class Driver extends Thread implements Serializable {
         return id;
     }
 
+    public Cars getCars(){
+        return carro;
+    }
+
     //get senha motorista
     public String getSenhaMotorista(){
         return senha;
@@ -164,19 +193,19 @@ public class Driver extends Thread implements Serializable {
     }
 
     // roda simulação sumo
-    public void simula(MobilityCompany _company, DataOutputStream _out, DataInputStream _in, Socket _socket){
+    public void simula(MobilityCompany _company, DataOutputStream _out, DataInputStream _in, Socket _socket, int i){
         /* SUMO */
 
       
         String sumo_bin = "sumo";		
         String config_file = "map/map.sumo.cfg";
         // Sumo connection
-        
+    
         this.sumo = new SumoTraciConnection(sumo_bin, config_file);
-
+            
+        //carro = criaCarro();
         sumo.addOption("start", "1"); // auto-run on GUI show
         sumo.addOption("quit-on-end", "1"); // auto-close on end
-
         this.carro = criaCarro();
         try {
 			sumo.runServer(8000);
@@ -186,23 +215,33 @@ public class Driver extends Thread implements Serializable {
 				tS1.start();
                 Thread.sleep(4000);
                 carro.start();
+                Thread.sleep(100);
 		        //int i = 0;
                 while (_company.isOn()) {
                     carro.atualizaSensores();
                     dadosJson = carro.getJsonDados(); // Obtém os dados JSON
-                    /*System.out.println("Combustivel: " + carro.getFuelConsumption());
-                    System.out.println(dadosJson);*/
-                    //System.out.println("Driver: " + dadosJson);
+                    //System.out.println("Driver: " + dadosJson
                     String input = carro.getRouteID();
+                    if(carro.getFuelConsumption() < 9.8 & abastecer == true){
+                        posto.setCar(carro);
+                        carro.abastecer(0.2);
+                        
+                        BotPayment pagar = new BotPayment();
+                        pagar.start();
+                        System.out.println("FuelStation: " + carro.getIdAuto() + " abastecido!");
+                    }
+                    
                     //System.out.println(input);
                     String result = input.replaceAll("_[^\\s]*", "");
                     //System.out.println(result);
                     // Comparar o JSON atual com o JSON anterior
                     if (result.equals(ultimaEdge)) {
                         //_socket.close();
+                        controlaTanque(carro.getFuelConsumption());
                         msgFinaliza(_out);
-                        Thread.sleep(1000);
+                        Thread.sleep(100);
                         sumo.close();
+                    
                         System.out.print("");
                         System.out.println("------------------------------");
                         System.out.println("Driver " + getIdMotorista() + " VIAGEM FINALIZADA, DADOS GERADOS!");
@@ -216,9 +255,9 @@ public class Driver extends Thread implements Serializable {
                     }
                     // atualiza o JSON anterior com o JSON atual
                     jsonAnterior = dadosJson;
-                    Thread.sleep(500);
+                    Thread.sleep(carro.getAcquisitionRate());
                 }
-                Thread.sleep(1000); // Pausa por 1 segundo antes de sair do loop
+                Thread.sleep(100); // Pausa por 1 segundo antes de sair do loop
 			} else {
                 System.out.println("Driver " + getIdMotorista() + " VIAGEM FINALIZADA, DADOS GERADOS!");
                 System.out.println("------------------------------");
@@ -231,9 +270,9 @@ public class Driver extends Thread implements Serializable {
     }
 
     // seta o carro
-    public void setCar(Cars _car){
+   /*public void setCar(Cars _car){
         carro = _car;
-    }
+    }*/
 
     //msg finaliza
     public void msgFinaliza(DataOutputStream _out){
@@ -272,12 +311,60 @@ public class Driver extends Thread implements Serializable {
             int personCapacity = 1;
             int personNumber = 1;
             SumoColor green = new SumoColor(0, 255, 0, 126);
-            Cars a1 = new Cars(true, this.idCar, green, id, sumo, 500, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
-            setCar(a1);
+            Cars a1 = new Cars(true, this.idCar, green, id, sumo, 100, fuelType, fuelPreferential, fuelPrice, personCapacity, personNumber);
             return a1;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
+    
+    public void controlaTanque(double _tank){
+        double aux = 10 - _tank;
+        this.tank = aux; 
+    }
+
+    public class BotPayment extends Thread {
+        
+        public BotPayment(){
+    
+        }
+
+        public void run(){
+            abastecer("abastecer", getIdMotorista(), 0.2);
+        }
+
+        // request para abastecer o carro
+        public void abastecer(String _request, String _motorista, double _litros){
+            try{
+                Socket socket = new Socket("127.0.0.1", 3000);
+                DataInputStream input = new DataInputStream(socket.getInputStream());
+                DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+                String requestCriaConta = JsonSchema.abastecer(_request, getIdMotorista(), getSenhaMotorista(), _litros);
+                // Criptografe a mensagem usando a classe Crypto
+                byte[] encryptedMessage = Crypto.encrypt(requestCriaConta.getBytes(), geraChave(), geraIv());
+                
+                // Envie a mensagem criptografada ao servidor
+                output.write(encryptedMessage);
+                output.flush();
+
+                // Receba a resposta criptografada do servidor
+                /*byte[] encryptedResponse = new byte[1024];
+                int length = input.read(encryptedResponse);
+                byte[] encryptedResponseBytes = new byte[length];
+                System.arraycopy(encryptedResponse, 0, encryptedResponseBytes, 0, length);
+        
+                // Descriptografe a resposta usando a classe Crypto
+                byte[] decryptedResponseBytes = Crypto.decrypt(encryptedResponseBytes, geraChave(), geraIv());
+                // Converte a resposta descriptografada para String
+                String resposta = new String(decryptedResponseBytes);
+                System.out.println(resposta);*/
+                // fecha conexao
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
 }

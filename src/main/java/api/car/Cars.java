@@ -4,31 +4,23 @@ import de.tudresden.sumo.cmd.Vehicle;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.FileOutputStream;
 
-/* 
-import org.osgeo.proj4j.CRSFactory;
-import org.osgeo.proj4j.CoordinateReferenceSystem;
-import org.osgeo.proj4j.Proj;
-import org.osgeo.proj4j.ProjCoordinate;
-*/
 import it.polito.appeal.traci.SumoTraciConnection;
-import app.json.JsonSchema;
+import api.json.JsonSchema;
 import de.tudresden.sumo.objects.SumoColor;
 import de.tudresden.sumo.objects.SumoPosition2D;
-import io.sim.crypto.Crypto;
+import api.crypto.Crypto;
 
-public class Cars extends Thread {
+public class Cars extends Thread implements Serializable{
 
 	private String idAuto;
 	private SumoColor colorAuto;
@@ -54,6 +46,8 @@ public class Cars extends Thread {
 
 	private int simulationCount = 1;
 	private String ultimoDataCar;
+	
+
 	
 	public Cars(boolean _on_off, String _idAuto, SumoColor _colorAuto, String _driverID, SumoTraciConnection _sumo, long _acquisitionRate,
 			int _fuelType, int _fuelPreferential, double _fuelPrice, int _personCapacity, int _personNumber) throws Exception {
@@ -102,7 +96,7 @@ public class Cars extends Thread {
 
 
 				//Cars.sleep(this.acquisitionRate);
-				Thread.sleep(100);
+				Thread.sleep(10);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -226,9 +220,7 @@ public class Cars extends Thread {
 				this.speed = (double) sumo.do_job_get(Vehicle.getSpeed(this.idAuto));
 				// monitora o consumo de gasolina
 				double consumo = (double) sumo.do_job_get(Vehicle.getFuelConsumption(this.idAuto)); // obtem o consumo de combustivel
-				//System.out.println("Distancia: " + totalDistance);
 				controlaCombustiverl(consumo);	
-				//System.out.println(getFuelConsumption());			
 				this.routeID = (String) sumo.do_job_get(Vehicle.getRouteID(this.idAuto)); // obtem o consumo de combustivel
 
 				// Chame o método para criar os dados JSON e salve no campo
@@ -360,7 +352,7 @@ public class Cars extends Thread {
 	public static double miligramasParaLitros(double miligramas) {
 		double densidade = 770;
         if (densidade <= 0) {
-            throw new IllegalArgumentException("A densidade deve ser um valor positivo.");
+            //throw new IllegalArgumentException("A densidade deve ser um valor positivo.");
         }
 
         // Fórmula para conversão de miligramas para litros: litros = miligramas / (1000 * densidade)
@@ -376,13 +368,13 @@ public class Cars extends Thread {
 	public void enviaDados(String _request, DataInputStream _in, DataOutputStream _out, ObjectInputStream _objeto, Socket _socket) {
 		try {
 			// while (this.on_off) {
-			// System.out.println(novoDataCar);
             if (novoDataCar.equals(this.ultimoDataCar)) {
                 // Método para sair do loop e parar o envio de dados
+				
                 msgFinaliza(_out);
                 System.out.println("Driver: rota finalizada, dados sincronizados com o servidor!");
                 this.on_off = false;
-                exportToExcel("data/data_car_" + simulationCount + ".xlsx"); // Exporta dados para uma nova planilha com um nome exclusivo
+                exportToExcel("data/data_car.xlsx"); // Exporta dados para uma nova planilha com um nome exclusivo
                 simulationCount++; // Incrementa o contador de simulações
             } else {
 				// Criptografa a mensagem usando a classe Crypto
@@ -428,20 +420,17 @@ public class Cars extends Thread {
 	}
 
 	// método para exportar dados da simulação para Excel
-// método para exportar dados da simulação para Excel
 	public void exportToExcel(String filePatht) {
 		try (Workbook workbook = new XSSFWorkbook()) {
 			for (DataCars data : drivingRepport) {
 				String carID = data.getAutoID();
-
-				// Crie um nome único para a planilha com base no ID do carro e na simulação
 				String sheetName = "Simulação_" + simulationCount + "_Car_" + carID;
 
 				// Verifique se a planilha com o nome já existe no Workbook
 				Sheet currentSheet = workbook.getSheet(sheetName);
 
 				if (currentSheet == null) {
-					// Se não existe, crie uma nova planilha com o nome único
+					// Se não existe, crie uma nova planilha com o nome exclusivo
 					currentSheet = workbook.createSheet(sheetName);
 
 					// Crie um novo cabeçalho para a nova planilha
@@ -479,20 +468,17 @@ public class Cars extends Thread {
 			try (FileOutputStream fileOut = new FileOutputStream(filePatht)) {
 				workbook.write(fileOut);
 			}
-
+			System.out.println("----------------------------");
 			System.out.println("Dados exportados para Excel com sucesso.");
+			System.out.println("----------------------------");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-
-
-
 	public double getDistancia(){
 		return totalDistance;
 	}
-
 
 	//msg finaliza
     public void msgFinaliza(DataOutputStream _out){
@@ -509,6 +495,11 @@ public class Cars extends Thread {
             e.printStackTrace();
         }
     }
+
+	public void abastecer(double litros){
+		fuelTank = fuelTank + litros;
+	}
+	
 }
 
 
