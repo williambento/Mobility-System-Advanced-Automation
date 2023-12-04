@@ -1,7 +1,5 @@
 package api.car;
 
-import java.util.Date;
-
 public class DataCars {
 
 	/* SUMO's data */

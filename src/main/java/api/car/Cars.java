@@ -12,6 +12,7 @@ import java.util.Arrays;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import java.io.FileOutputStream;
 
 import it.polito.appeal.traci.SumoTraciConnection;
@@ -33,7 +34,7 @@ public class Cars extends Thread implements Serializable{
 	private int fuelPreferential; 	// 1-diesel, 2-gasoline, 3-ethanol, 4-hybrid
 	private double fuelPrice; 		// price in liters
 	private int personCapacity;		// the total number of persons that can ride in this vehicle
-	private int personNumber;		// the total number of persons which are riding in this vehicle
+	private int personNumber; 		// the total number of persons which are riding in this vehicle
 
 	private ArrayList<DataCars> drivingRepport;
 	private double totalDistance;
@@ -46,11 +47,10 @@ public class Cars extends Thread implements Serializable{
 
 	private int simulationCount = 1;
 	private String ultimoDataCar;
-	
+	private String sheetName;
 
-	
 	public Cars(boolean _on_off, String _idAuto, SumoColor _colorAuto, String _driverID, SumoTraciConnection _sumo, long _acquisitionRate,
-			int _fuelType, int _fuelPreferential, double _fuelPrice, int _personCapacity, int _personNumber) throws Exception {
+			int _fuelType, int _fuelPreferential, double _fuelPrice, int _personCapacity, int _personNumber, String _sheetName) throws Exception {
 
 		this.ultimoDataCar = null;
 		this.on_off = _on_off;
@@ -60,6 +60,7 @@ public class Cars extends Thread implements Serializable{
 		this.sumo = _sumo;
 		this.acquisitionRate = _acquisitionRate;
 		this.fuelTank = 10.0; //inicialmente o carro começa com tanque cheio
+		this.sheetName = _sheetName;
 		
 		if((_fuelType < 0) || (_fuelType > 4)) {
 			this.fuelType = 4;
@@ -93,9 +94,6 @@ public class Cars extends Thread implements Serializable{
 				DataOutputStream output = new DataOutputStream(carSocket.getOutputStream());
 				ObjectInputStream objeto = new ObjectInputStream(carSocket.getInputStream());
 				enviaDados("carDados", input, output, objeto, carSocket);
-
-
-				//Cars.sleep(this.acquisitionRate);
 				Thread.sleep(10);
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -110,15 +108,7 @@ public class Cars extends Thread implements Serializable{
 			if (sumo != null && !sumo.isClosed()) {
 				SumoPosition2D sumoPosition2D;
 				sumoPosition2D = (SumoPosition2D) sumo.do_job_get(Vehicle.getPosition(this.idAuto));
-				double x = sumoPosition2D.x;
-				double y = sumoPosition2D.y;
 
-
-				//System.out.println("AutoID: " + this.getIdAuto());
-				//System.out.println("RoadID: " + (String) this.sumo.do_job_get(Vehicle.getRoadID(this.idAuto)));
-				//System.out.println("RouteID: " + (String) this.sumo.do_job_get(Vehicle.getRouteID(this.idAuto)));
-				//System.out.println("RouteIndex: " + this.sumo.do_job_get(Vehicle.getRouteIndex(this.idAuto)));
-				
 				DataCars _repport = new DataCars(
 
 						this.idAuto, this.driverID, System.currentTimeMillis(), sumoPosition2D.x, sumoPosition2D.y,
@@ -129,23 +119,13 @@ public class Cars extends Thread implements Serializable{
 
 						(double) sumo.do_job_get(Vehicle.getFuelConsumption(this.idAuto)),
 						
-						// Vehicle's fuel consumption in ml/s during this time step,
-						// to get the value for one step multiply with the step length; error value:
-						// -2^30
-						
 						1/*averageFuelConsumption (calcular)*/,
 
 						this.fuelType, this.fuelPrice,
 
 						(double) sumo.do_job_get(Vehicle.getCO2Emission(this.idAuto)),
-						// Vehicle's CO2 emissions in mg/s during this time step,
-						// to get the value for one step multiply with the step length; error value:
-						// -2^30
 
 						(double) sumo.do_job_get(Vehicle.getHCEmission(this.idAuto)),
-						// Vehicle's HC emissions in mg/s during this time step,
-						// to get the value for one step multiply with the step length; error value:
-						// -2^30
 						
 						this.personCapacity,
 						// the total number of persons that can ride in this vehicle
@@ -154,63 +134,13 @@ public class Cars extends Thread implements Serializable{
 						// the total number of persons which are riding in this vehicle
 						(double) sumo.do_job_get(Vehicle.getDistance(this.idAuto)),
 						(String) this.sumo.do_job_get(Vehicle.getRoadID(this.idAuto))
-					
-
-					
 				);
 
-				// Criar relat�rio auditoria / alertas
-				// velocidadePermitida = (double)
-				// sumo.do_job_get(Vehicle.getAllowedSpeed(this.idSumoVehicle));
-
 				this.drivingRepport.add(_repport);
-
-				//System.out.println("Data: " + this.drivingRepport.size());
-				//System.out.println("idAuto = " + this.drivingRepport.get(this.drivingRepport.size() - 1).getAutoID());
-				//System.out.println(
-				//		"timestamp = " + this.drivingRepport.get(this.drivingRepport.size() - 1).getTimeStamp());
-				//System.out.println("X=" + this.drivingRepport.get(this.drivingRepport.size() - 1).getX_Position() + ", "
-				//		+ "Y=" + this.drivingRepport.get(this.drivingRepport.size() - 1).getY_Position());
-				//System.out.println("speed = " + this.drivingRepport.get(this.drivingRepport.size() - 1).getSpeed());
-				//System.out.println("odometer = " + this.drivingRepport.get(this.drivingRepport.size() - 1).getOdometer());
-				//System.out.println("Fuel Consumption = "
-						//+ this.drivingRepport.get(this.drivingRepport.size() - 1).getFuelConsumption());
-				//System.out.println("Fuel Type = " + this.fuelType);
-				//System.out.println("Fuel Price = " + this.fuelPrice);
-
-				//System.out.println(
-						//"CO2 Emission = " + this.drivingRepport.get(this.drivingRepport.size() - 1).getCo2Emission());
-
-				//System.out.println();
-				//System.out.println("************************");
-				//System.out.println("testes: ");
-				//System.out.println("getAngle = " + (double) sumo.do_job_get(Vehicle.getAngle(this.idAuto)));
-				//System.out
-				//		.println("getAllowedSpeed = " + (double) sumo.do_job_get(Vehicle.getAllowedSpeed(this.idAuto)));
-				//System.out.println("getSpeed = " + (double) sumo.do_job_get(Vehicle.getSpeed(this.idAuto)));
-				//System.out.println(
-				//		"getSpeedDeviation = " + (double) sumo.do_job_get(Vehicle.getSpeedDeviation(this.idAuto)));
-				//System.out.println("getMaxSpeedLat = " + (double) sumo.do_job_get(Vehicle.getMaxSpeedLat(this.idAuto)));
-				//System.out.println("getSlope = " + (double) sumo.do_job_get(Vehicle.getSlope(this.idAuto))
-				//		+ " the slope at the current position of the vehicle in degrees");
-				//System.out.println(
-				//		"getSpeedWithoutTraCI = " + (double) sumo.do_job_get(Vehicle.getSpeedWithoutTraCI(this.idAuto))
-				//				+ " Returns the speed that the vehicle would drive if no speed-influencing\r\n"
-				//				+ "command such as setSpeed or slowDown was given.");
-
-				//sumo.do_job_set(Vehicle.setSpeed(this.idAuto, (1000 / 3.6)));
-				//double auxspeed = (double) sumo.do_job_get(Vehicle.getSpeed(this.idAuto));
-				//System.out.println("new speed = " + (auxspeed * 3.6));
-				//System.out.println(
-				//		"getSpeedDeviation = " + (double) sumo.do_job_get(Vehicle.getSpeedDeviation(this.idAuto)));
-				
 				
 				sumo.do_job_set(Vehicle.setSpeedMode(this.idAuto, 0));
 				sumo.do_job_set(Vehicle.setSpeed(this.idAuto, 6.95));
 
-				
-				//System.out.println("getPersonNumber = " + sumo.do_job_get(Vehicle.getPersonNumber(this.idAuto)));
-				//System.out.println("getPersonIDList = " + sumo.do_job_get(Vehicle.getPersonIDList(this.idAuto)));
 				double previousDistance = this.totalDistance; // Armazene a distância anterior
 				double currentDistance = (double) sumo.do_job_get(Vehicle.getDistance(this.idAuto)); // Obtenha a distância atual
 				double intervalDistance = currentDistance - previousDistance; // Calcule a diferença de distância no intervalo atual
@@ -225,12 +155,9 @@ public class Cars extends Thread implements Serializable{
 
 				// Chame o método para criar os dados JSON e salve no campo
             	novoDataCar = JsonSchema.carDados("carDados", getIdAuto(), getCO2Emission(), getDistancia());
-				//System.out.println("Driver: " + dadosJson);
-				//System.out.println("Combustivel: " + fuelTank);
-				//System.out.println(dadosJson);
 
 			} else {
-				//System.out.println("SUMO is closed...");
+				System.out.println("SUMO is closed...");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -374,7 +301,8 @@ public class Cars extends Thread implements Serializable{
                 msgFinaliza(_out);
                 System.out.println("Driver: rota finalizada, dados sincronizados com o servidor!");
                 this.on_off = false;
-                exportToExcel("data/data_car.xlsx"); // Exporta dados para uma nova planilha com um nome exclusivo
+				String data = "data/" + System.currentTimeMillis() + "CAR.xlsx";
+                exportToExcel(data); // Exporta dados para uma nova planilha com um nome exclusivo
                 simulationCount++; // Incrementa o contador de simulações
             } else {
 				// Criptografa a mensagem usando a classe Crypto
@@ -422,16 +350,13 @@ public class Cars extends Thread implements Serializable{
 	// método para exportar dados da simulação para Excel
 	public void exportToExcel(String filePatht) {
 		try (Workbook workbook = new XSSFWorkbook()) {
+			long sheetName = System.currentTimeMillis();
+			String sheetname = "Simulacao_" + sheetName;		
+			Sheet currentSheet = workbook.createSheet(sheetname);
 			for (DataCars data : drivingRepport) {
-				String carID = data.getAutoID();
-				String sheetName = "Simulação_" + simulationCount + "_Car_" + carID;
-
-				// Verifique se a planilha com o nome já existe no Workbook
-				Sheet currentSheet = workbook.getSheet(sheetName);
-
 				if (currentSheet == null) {
 					// Se não existe, crie uma nova planilha com o nome exclusivo
-					currentSheet = workbook.createSheet(sheetName);
+					currentSheet = workbook.createSheet(sheetname);
 
 					// Crie um novo cabeçalho para a nova planilha
 					Row headerRow = currentSheet.createRow(0);
@@ -500,6 +425,14 @@ public class Cars extends Thread implements Serializable{
 		fuelTank = fuelTank + litros;
 	}
 	
+	public int getSimulationCount() {
+		return simulationCount;
+	}
+
+	public String getSheetName() {
+		return sheetName;
+	}
+
 }
 
 

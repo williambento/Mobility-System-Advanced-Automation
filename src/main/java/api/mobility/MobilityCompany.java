@@ -40,7 +40,6 @@ public class MobilityCompany extends Thread implements Serializable{
 
     private String idDriver;
 
-    private boolean pagar;
     private int completas;
     private double distancia;
 
@@ -59,10 +58,10 @@ public class MobilityCompany extends Thread implements Serializable{
         try {
             socket = new ServerSocket(PORT);
             System.out.println("MobilityCompany online...");
-            String HOST = "127.0.0.1";
+            /*String HOST = "127.0.0.1";
             int PORT_BANCO = 3000;  // Substitua pela porta real do servidor remoto
             Socket socket_banco = new Socket(HOST, PORT_BANCO);
-            criarConta(socket_banco);
+            criarConta(socket_banco);*/
            
             // aguarda e aceita conexões de clientes
             while (verifica) {
@@ -78,7 +77,7 @@ public class MobilityCompany extends Thread implements Serializable{
     // metodo para receber mensagens
     public void request(Socket _socket){
         try {
-            BotPayment botPagar = new BotPayment();
+            //BotPayment botPagar = new BotPayment();
             // entrada e saida
             DataInputStream _in = new DataInputStream(_socket.getInputStream());
             DataOutputStream _out = new DataOutputStream(_socket.getOutputStream());
@@ -101,9 +100,9 @@ public class MobilityCompany extends Thread implements Serializable{
             int aux = 0;
             // caso a requisição seja do tipo criar conta a conta é criada e um retorno de OK é dado ao cliente
             if ("rota".equals(resposta[0])){
-                int rangeRota = Integer.parseInt(resposta[3]);
+                //int rangeRota = Integer.parseInt(resposta[3]);
                 idDriver = resposta[1];
-                for(int i = 0; i < rangeRota; i++){
+                //for(int i = 0; i < rangeRota; i++){
                     idItinerario = this.generateRandomID();
                     String msg = this.buscaRotaID(idItinerario);
                     byte[] envio = Crypto.encrypt(msg.getBytes(), geraChave(), geraIv());
@@ -121,7 +120,7 @@ public class MobilityCompany extends Thread implements Serializable{
                     setIDItinerary(this.getItinerary()[0]);
                     objeto.writeObject(this);
                     objeto.flush();
-                }
+                //}
             } else if("fim".equals(resposta[0])){
                 
                 rotasExecutadas.add(rota);
@@ -133,7 +132,7 @@ public class MobilityCompany extends Thread implements Serializable{
             } else if ("carDados".equals(resposta[0])){
                 distancia = Double.valueOf(resposta[3]);
                 System.out.println(resposta[0]);
-                botPagar.start();
+                //botPagar.start();
             }
 
         } catch (IOException e) {
@@ -163,10 +162,10 @@ public class MobilityCompany extends Thread implements Serializable{
             System.arraycopy(mensagemCriptografada, 0, mensagemCriptografadaBytes, 0, length);
                         
             // descriptografar a mensagem usando a classe Crypto
-            byte[] mensagemDescriptografadaBytes = Crypto.decrypt(mensagemCriptografadaBytes, geraChave(), geraIv());
+            //byte[] mensagemDescriptografadaBytes = Crypto.decrypt(mensagemCriptografadaBytes, geraChave(), geraIv());
                     
             // converte a mensagem descriptografada para string
-            String mensagemDescString = new String(mensagemDescriptografadaBytes);
+            //String mensagemDescString = new String(mensagemDescriptografadaBytes);
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -283,11 +282,11 @@ public class MobilityCompany extends Thread implements Serializable{
         return idDriver;
     }
 
-    public class BotPayment extends Thread {
+    /*public class BotPayment extends Thread {
 
         private double distanciaPercorrida;
-        private double auxDistance;
-        private double valorPago;
+        //private double auxDistance;
+        //private double valorPago;
         private double valor;
         private String idDriver;
         private boolean pagar;
@@ -343,6 +342,14 @@ public class MobilityCompany extends Thread implements Serializable{
             }
             
         }
+    }*/
+
+    public int getCompletas() {
+        return completas;
+    }
+
+    public double getDistancia() {
+        return distancia;
     }
 
 }
